@@ -15,17 +15,28 @@ function generateQRString(name: string): string {
   return `kapeguid-${slug}-${ts}${rand}`;
 }
 
+function addOneYear(dateStr: string): string {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  d.setFullYear(d.getFullYear() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
 export default function AddCustomerModal({ onClose, onSuccess }: Props) {
   const [step, setStep] = useState<"form" | "success">("form");
   const [form, setForm] = useState({
     name: "", phone: "", email: "", notes: "",
     access_code: "", card_issue_date: "", expiry_date: "", free_coffee: false,
   });
-  const [errors, setErrors]         = useState<Record<string, string>>({});
-  const [loading, setLoading]       = useState(false);
+  const [errors, setErrors]           = useState<Record<string, string>>({});
+  const [loading, setLoading]         = useState(false);
   const [serverError, setServerError] = useState("");
   const [newCustomer, setNewCustomer] = useState<Customer | null>(null);
-  const [qrDataUrl, setQrDataUrl]   = useState("");
+  const [qrDataUrl, setQrDataUrl]     = useState("");
+
+  function handleIssueDateChange(val: string) {
+    setForm({ ...form, card_issue_date: val, expiry_date: addOneYear(val) });
+  }
 
   function validate() {
     const e: Record<string, string> = {};
@@ -201,18 +212,23 @@ export default function AddCustomerModal({ onClose, onSuccess }: Props) {
                 <input className="input-field" placeholder="e.g. 0123"
                   value={form.access_code} onChange={(e) => setForm({ ...form, access_code: e.target.value })} />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="field-label">Card Issue Date</label>
-                  <input className="input-field" type="date"
-                    value={form.card_issue_date} onChange={(e) => setForm({ ...form, card_issue_date: e.target.value })} />
-                </div>
-                <div>
-                  <label className="field-label">Expiry Date</label>
-                  <input className="input-field" type="date"
-                    value={form.expiry_date} onChange={(e) => setForm({ ...form, expiry_date: e.target.value })} />
-                </div>
+
+              {/* Card Issue Date — expiry auto-calculated */}
+              <div>
+                <label className="field-label">Card Issue Date</label>
+                <input className="input-field" type="date"
+                  value={form.card_issue_date}
+                  onChange={(e) => handleIssueDateChange(e.target.value)} />
+                {form.expiry_date && (
+                  <p className="text-xs mt-1.5 flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
+                    <span style={{ color: "var(--warm)" }}>◈</span>
+                    Expiry auto-set to:
+                    <span style={{ color: "var(--warm)", fontWeight: 500 }}>{form.expiry_date}</span>
+                  </p>
+                )}
               </div>
+
+              {/* Free coffee toggle */}
               <div className="flex items-center gap-3 p-3 rounded-sm"
                 style={{ background: "var(--surface2)", border: "1px solid var(--border)" }}>
                 <input type="checkbox" id="free_coffee" checked={form.free_coffee}

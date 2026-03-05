@@ -1,18 +1,26 @@
 "use client";
+import { Suspense } from "react";
 import { useEffect, useState, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { supabase, type Customer } from "@/lib/supabase";
 import { format } from "date-fns";
 import AddCustomerModal from "@/components/AddCustomerModal";
 import CustomerDetailModal from "@/components/CustomerDetailModal";
 
-export default function CustomersPage() {
+type FilterType = "all" | "active" | "inactive";
+
+function CustomersContent() {
+  const searchParams = useSearchParams();
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [filtered, setFiltered] = useState<Customer[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [showAdd, setShowAdd] = useState(false);
-  const [selected, setSelected] = useState<Customer | null>(null);
+  const [filtered, setFiltered]   = useState<Customer[]>([]);
+  const [loading, setLoading]     = useState(true);
+  const [search, setSearch]       = useState("");
+  const [filter, setFilter]       = useState<FilterType>(
+    (searchParams.get("status") as FilterType) ?? "all"
+  );
+  const [showAdd, setShowAdd]     = useState(false);
+  const [selected, setSelected]   = useState<Customer | null>(null);
 
   const fetchCustomers = useCallback(async () => {
     const { data } = await supabase
@@ -27,16 +35,22 @@ export default function CustomersPage() {
 
   useEffect(() => {
     const q = search.toLowerCase();
-    setFiltered(
-      q
-        ? customers.filter((c) =>
-            c.name.toLowerCase().includes(q) ||
-            c.phone.includes(q) ||
-            (c.email ?? "").toLowerCase().includes(q)
-          )
-        : customers
+    let list = customers;
+    if (filter === "active")   list = list.filter((c) => c.is_active);
+    if (filter === "inactive") list = list.filter((c) => !c.is_active);
+    if (q) list = list.filter((c) =>
+      c.name.toLowerCase().includes(q) ||
+      c.phone.includes(q) ||
+      (c.email ?? "").toLowerCase().includes(q)
     );
-  }, [search, customers]);
+    setFiltered(list);
+  }, [search, customers, filter]);
+
+  const counts = {
+    all:      customers.length,
+    active:   customers.filter((c) => c.is_active).length,
+    inactive: customers.filter((c) => !c.is_active).length,
+  };
 
   return (
     <div className="min-h-screen" style={{ background: "var(--bg)" }}>
@@ -49,7 +63,7 @@ export default function CustomersPage() {
             <div className="flex items-center gap-2 mb-1">
               <div className="w-0.5 h-4" style={{ background: "var(--warm)" }} />
               <span className="text-xs uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>
-                {customers.length} Members
+                {filtered.length} of {customers.length} Members
               </span>
             </div>
             <h1 className="font-display text-3xl font-bold" style={{ color: "var(--text)" }}>Customers</h1>
@@ -63,7 +77,7 @@ export default function CustomersPage() {
         </div>
 
         {/* Search */}
-        <div className="relative mb-6">
+        <div className="relative mb-3">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
             className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--text-muted)" }}>
             <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
@@ -77,6 +91,25 @@ export default function CustomersPage() {
           />
         </div>
 
+        {/* Status filter tabs */}
+        <div className="flex gap-2 mb-6">
+          {(["all", "active", "inactive"] as FilterType[]).map((f) => (
+            <button key={f} onClick={() => setFilter(f)}
+              className="btn"
+              style={{
+                padding: "5px 14px", fontSize: 11,
+                background: filter === f ? "var(--text)" : "transparent",
+                color:      filter === f ? "var(--bg)"  : "var(--text-muted)",
+                border:     `1px solid ${filter === f ? "var(--text)" : "var(--border)"}`,
+                transition: "all 0.15s",
+              }}>
+              {f === "all"      && `All  (${counts.all})`}
+              {f === "active"   && `● Active  (${counts.active})`}
+              {f === "inactive" && `○ Inactive  (${counts.inactive})`}
+            </button>
+          ))}
+        </div>
+
         {/* Table */}
         {loading ? (
           <div className="space-y-2">
@@ -88,9 +121,11 @@ export default function CustomersPage() {
           <div className="surface rounded-sm py-16 text-center">
             <div className="text-4xl mb-3 opacity-20">☕</div>
             <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-              {search ? "No customers match your search" : "No customers yet — add your first one!"}
+              {search ? "No customers match your search"
+                : filter !== "all" ? `No ${filter} customers found`
+                : "No customers yet — add your first one!"}
             </p>
-            {!search && (
+            {!search && filter === "all" && (
               <button className="btn btn-primary mt-4" onClick={() => setShowAdd(true)}>Add First Customer</button>
             )}
           </div>
@@ -110,8 +145,7 @@ export default function CustomersPage() {
                 </thead>
                 <tbody>
                   {filtered.map((c) => (
-                    <tr key={c.id}
-                      className="transition-colors cursor-pointer"
+                    <tr key={c.id} className="transition-colors cursor-pointer"
                       style={{ borderBottom: "1px solid var(--border)" }}
                       onClick={() => setSelected(c)}
                       onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface2)")}
@@ -125,15 +159,9 @@ export default function CustomersPage() {
                           <span className="text-sm font-medium" style={{ color: "var(--text)" }}>{c.name}</span>
                         </div>
                       </td>
-                      <td style={{ padding: "12px 14px" }}>
-                        <span className="text-xs" style={{ color: "var(--text-muted)" }}>{c.phone}</span>
-                      </td>
-                      <td style={{ padding: "12px 14px" }}>
-                        <span className="text-xs" style={{ color: "var(--text-muted)" }}>{c.email ?? "—"}</span>
-                      </td>
-                      <td style={{ padding: "12px 14px" }}>
-                        <span className="badge badge-warm">{c.visit_count}</span>
-                      </td>
+                      <td style={{ padding: "12px 14px" }}><span className="text-xs" style={{ color: "var(--text-muted)" }}>{c.phone}</span></td>
+                      <td style={{ padding: "12px 14px" }}><span className="text-xs" style={{ color: "var(--text-muted)" }}>{c.email ?? "—"}</span></td>
+                      <td style={{ padding: "12px 14px" }}><span className="badge badge-warm">{c.visit_count}</span></td>
                       <td style={{ padding: "12px 14px" }}>
                         <span className="text-xs" style={{ color: "var(--text-muted)" }}>
                           {c.last_visit ? format(new Date(c.last_visit), "MMM d, yyyy") : "Never"}
@@ -145,8 +173,7 @@ export default function CustomersPage() {
                         </span>
                       </td>
                       <td style={{ padding: "12px 14px" }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                          style={{ color: "var(--text-faint)" }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: "var(--text-faint)" }}>
                           <path d="M5 12h14M12 5l7 7-7 7"/>
                         </svg>
                       </td>
@@ -188,19 +215,19 @@ export default function CustomersPage() {
       </div>
 
       {showAdd && (
-        <AddCustomerModal
-          onClose={() => setShowAdd(false)}
-          onSuccess={() => { setShowAdd(false); fetchCustomers(); }}
-        />
+        <AddCustomerModal onClose={() => setShowAdd(false)} onSuccess={() => { setShowAdd(false); fetchCustomers(); }} />
       )}
-
       {selected && (
-        <CustomerDetailModal
-          customer={selected}
-          onClose={() => setSelected(null)}
-          onUpdate={() => { setSelected(null); fetchCustomers(); }}
-        />
+        <CustomerDetailModal customer={selected} onClose={() => setSelected(null)} onUpdate={() => { setSelected(null); fetchCustomers(); }} />
       )}
     </div>
+  );
+}
+
+export default function CustomersPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen" style={{ background: "var(--bg)" }} />}>
+      <CustomersContent />
+    </Suspense>
   );
 }

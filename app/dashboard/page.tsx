@@ -4,6 +4,7 @@ import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import { supabase, type Customer, type Visit } from "@/lib/supabase";
 import { format, formatDistanceToNow, startOfDay, subDays } from "date-fns";
+import CustomerDetailModal from "@/components/CustomerDetailModal";
 
 type VisitWithCustomer = Visit & { customers: Customer };
 
@@ -12,6 +13,7 @@ export default function Dashboard() {
   const [stats, setStats] = useState({ total: 0, active: 0, today: 0, week: 0 });
   const [recentVisits, setRecentVisits] = useState<VisitWithCustomer[]>([]);
   const [topCustomers, setTopCustomers] = useState<Customer[]>([]);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
 
   const fetchData = useCallback(async () => {
     const now = new Date();
@@ -48,6 +50,13 @@ export default function Dashboard() {
     return () => { supabase.removeChannel(ch); };
   }, [fetchData]);
 
+  const statCards = [
+    { label: "Total Members",  value: stats.total,  icon: "👥", sub: "registered",  href: "/customers" },
+    { label: "Active Members", value: stats.active, icon: "✦",  sub: "enabled",     href: "/customers?status=active" },
+    { label: "Today's Visits", value: stats.today,  icon: "☕", sub: "check-ins",   href: "/customers?status=active" },
+    { label: "This Week",      value: stats.week,   icon: "◈",  sub: "7 days",      href: "/customers" },
+  ];
+
   return (
     <div className="min-h-screen" style={{ background: "var(--bg)" }}>
       <Navbar />
@@ -73,22 +82,32 @@ export default function Dashboard() {
           </Link>
         </div>
 
-        {/* Stats grid */}
+        {/* Stats grid — each card is clickable */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
-          {[
-            { label: "Total Members", value: stats.total, icon: "👥", sub: "registered" },
-            { label: "Active Members", value: stats.active, icon: "✦", sub: "enabled" },
-            { label: "Today's Visits", value: stats.today, icon: "☕", sub: "check-ins" },
-            { label: "This Week", value: stats.week, icon: "◈", sub: "7 days" },
-          ].map((s, i) => (
-            <div key={i} className="surface p-5 rounded-sm animate-slide-up" style={{ animationDelay: `${i * 60}ms` }}>
-              <div className="text-xl mb-3" style={{ opacity: 0.7 }}>{s.icon}</div>
-              <div className="font-display text-3xl font-bold" style={{ color: "var(--text)" }}>
-                {loading ? <span className="animate-pulse opacity-30">—</span> : s.value}
+          {statCards.map((s, i) => (
+            <Link key={i} href={s.href} style={{ textDecoration: "none" }}>
+              <div className="surface p-5 rounded-sm animate-slide-up transition-all group"
+                style={{
+                  animationDelay: `${i * 60}ms`,
+                  cursor: "pointer",
+                  borderColor: "var(--border)",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--warm)")}
+                onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--border)")}>
+                <div className="text-xl mb-3" style={{ opacity: 0.7 }}>{s.icon}</div>
+                <div className="font-display text-3xl font-bold" style={{ color: "var(--text)" }}>
+                  {loading ? <span className="animate-pulse opacity-30">—</span> : s.value}
+                </div>
+                <div className="text-xs mt-1.5 uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>{s.label}</div>
+                <div className="flex items-center justify-between mt-0.5">
+                  <span className="text-xs" style={{ color: "var(--text-faint)" }}>{s.sub}</span>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                    className="opacity-0 group-hover:opacity-40 transition-opacity" style={{ color: "var(--warm)" }}>
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                  </svg>
+                </div>
               </div>
-              <div className="text-xs mt-1.5 uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>{s.label}</div>
-              <div className="text-xs mt-0.5" style={{ color: "var(--text-faint)" }}>{s.sub}</div>
-            </div>
+            </Link>
           ))}
         </div>
 
@@ -116,14 +135,20 @@ export default function Dashboard() {
             ) : (
               <div className="space-y-2">
                 {recentVisits.map((v) => (
-                  <div key={v.id} className="flex items-center gap-3 p-3 rounded-sm group transition-colors"
-                    style={{ background: "var(--surface2)", border: "1px solid var(--border)" }}>
+                  <div key={v.id}
+                    className="flex items-center gap-3 p-3 rounded-sm transition-all cursor-pointer group"
+                    style={{ background: "var(--surface2)", border: "1px solid var(--border)" }}
+                    onClick={() => v.customers && setSelectedCustomer(v.customers)}
+                    onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--warm)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--border)")}>
                     <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 font-display font-bold text-sm"
                       style={{ background: "var(--surface3)", color: "var(--warm)" }}>
                       {v.customers?.name?.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium truncate" style={{ color: "var(--text)" }}>{v.customers?.name}</div>
+                      <div className="text-sm font-medium truncate group-hover:underline" style={{ color: "var(--text)", textUnderlineOffset: 3 }}>
+                        {v.customers?.name}
+                      </div>
                       <div className="text-xs truncate" style={{ color: "var(--text-muted)" }}>{v.customers?.phone}</div>
                     </div>
                     <div className="text-right flex-shrink-0">
@@ -158,8 +183,12 @@ export default function Dashboard() {
             ) : (
               <div className="space-y-2">
                 {topCustomers.map((c, i) => (
-                  <div key={c.id} className="flex items-center gap-3 p-2.5 rounded-sm"
-                    style={{ background: "var(--surface2)", border: "1px solid var(--border)" }}>
+                  <div key={c.id}
+                    className="flex items-center gap-3 p-2.5 rounded-sm transition-all cursor-pointer group"
+                    style={{ background: "var(--surface2)", border: "1px solid var(--border)" }}
+                    onClick={() => setSelectedCustomer(c)}
+                    onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--warm)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--border)")}>
                     <span className="text-xs w-4 text-center flex-shrink-0 font-bold"
                       style={{ color: i === 0 ? "var(--warm)" : "var(--text-faint)" }}>
                       {i + 1}
@@ -169,7 +198,9 @@ export default function Dashboard() {
                       {c.name.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-xs font-medium truncate" style={{ color: "var(--text)" }}>{c.name}</div>
+                      <div className="text-xs font-medium truncate group-hover:underline" style={{ color: "var(--text)", textUnderlineOffset: 3 }}>
+                        {c.name}
+                      </div>
                     </div>
                     <span className="badge badge-warm flex-shrink-0">{c.visit_count} visits</span>
                   </div>
@@ -183,6 +214,15 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Customer detail modal — opened from dashboard */}
+      {selectedCustomer && (
+        <CustomerDetailModal
+          customer={selectedCustomer}
+          onClose={() => setSelectedCustomer(null)}
+          onUpdate={() => { setSelectedCustomer(null); fetchData(); }}
+        />
+      )}
     </div>
   );
 }
