@@ -49,8 +49,8 @@ export default function Dashboard() {
 
   const statCards = [
     { label: "Total Members",  value: stats.total,  icon: "👥", sub: "registered",  href: "/customers" },
-    { label: "Active Members", value: stats.active, icon: "✦",  sub: "enabled",     href: "/customers?status=active" },
-    { label: "Today's Visits", value: stats.today,  icon: "☕", sub: "check-ins",   href: "/customers?status=active" },
+    { label: "Active Members", value: stats.active, icon: "✦",  sub: "Customers",     href: "/customers?status=active" },
+    { label: "Today's Visits", value: stats.today,  icon: "☕", sub: "check-ins",   href: "/checkins?filter=today" },
     { label: "This Week",      value: stats.week,   icon: "◈",  sub: "7 days",      href: "/customers" },
   ];
 
