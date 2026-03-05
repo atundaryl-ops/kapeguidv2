@@ -7,20 +7,10 @@ export default function Home() {
 
         {/* Logo mark */}
         <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-5"
-            style={{ border: "1px solid var(--border2)", background: "var(--surface)" }}>
-            <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
-              {/* Coffee bean */}
-              <ellipse cx="18" cy="20" rx="12" ry="9" stroke="#EDEDEB" strokeWidth="1.2" fill="none"/>
-              <path d="M10 17 Q18 11 26 17" stroke="#EDEDEB" strokeWidth="1.2" fill="none"/>
-              <ellipse cx="18" cy="20" rx="3" ry="2.5" fill="#C8B89A" opacity="0.6"/>
-              {/* Steam */}
-              <path d="M13 9 Q15 6 13 3" stroke="#C8B89A" strokeWidth="1" fill="none" strokeLinecap="round"/>
-              <path d="M18 8 Q20 5 18 2" stroke="#C8B89A" strokeWidth="1" fill="none" strokeLinecap="round"/>
-              <path d="M23 9 Q25 6 23 3" stroke="#C8B89A" strokeWidth="1" fill="none" strokeLinecap="round"/>
-            </svg>
+          <div className="mb-5 flex justify-center">
+            <img src="/images/logo.jpg" alt="KapeGuid Logo" style={{ width: 112, height: 112, objectFit: "contain", borderRadius: 16 }} />
           </div>
-          <h1 className="font-display text-4xl font-black tracking-tight" style={{ color: "var(--text)" }}>
+          <h1 style={{ fontFamily: "Poppins, sans-serif", fontSize: 36, fontWeight: 800, letterSpacing: "-0.02em", color: "var(--text)" }}>
             kape<span style={{ color: "var(--warm)" }}>guid.</span>
           </h1>
           <p className="mt-2 text-xs tracking-widest uppercase" style={{ color: "var(--text-muted)" }}>
