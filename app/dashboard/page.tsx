@@ -62,7 +62,6 @@ export default function Dashboard() {
       <Navbar />
       <div className="relative z-10 max-w-6xl mx-auto px-4 py-8">
 
-        {/* Page header */}
         <div className="flex items-start justify-between mb-8 animate-fade-in">
           <div>
             <div className="flex items-center gap-2 mb-1">
@@ -82,16 +81,11 @@ export default function Dashboard() {
           </Link>
         </div>
 
-        {/* Stats grid — each card is clickable */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
           {statCards.map((s, i) => (
             <Link key={i} href={s.href} style={{ textDecoration: "none" }}>
               <div className="surface p-5 rounded-sm animate-slide-up transition-all group"
-                style={{
-                  animationDelay: `${i * 60}ms`,
-                  cursor: "pointer",
-                  borderColor: "var(--border)",
-                }}
+                style={{ animationDelay: `${i * 60}ms`, cursor: "pointer", borderColor: "var(--border)" }}
                 onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--warm)")}
                 onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--border)")}>
                 <div className="text-xl mb-3" style={{ opacity: 0.7 }}>{s.icon}</div>
@@ -112,26 +106,15 @@ export default function Dashboard() {
         </div>
 
         <div className="grid lg:grid-cols-3 gap-4">
-          {/* Recent visits */}
           <div className="lg:col-span-2 surface rounded-sm" style={{ padding: "1.25rem" }}>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xs uppercase tracking-widest font-medium" style={{ color: "var(--text-muted)" }}>
-                Recent Check-ins
-              </h2>
-              <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: "var(--green)" }} title="Live" />
+              <h2 className="text-xs uppercase tracking-widest font-medium" style={{ color: "var(--text-muted)" }}>Recent Check-ins</h2>
+              <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: "var(--green)" }} />
             </div>
-
             {loading ? (
-              <div className="space-y-3">
-                {[...Array(5)].map((_, i) => (
-                  <div key={i} className="h-12 rounded-sm animate-pulse" style={{ background: "var(--surface2)" }} />
-                ))}
-              </div>
+              <div className="space-y-3">{[...Array(5)].map((_, i) => <div key={i} className="h-12 rounded-sm animate-pulse" style={{ background: "var(--surface2)" }} />)}</div>
             ) : recentVisits.length === 0 ? (
-              <div className="text-center py-10">
-                <div className="text-3xl mb-2 opacity-20">☕</div>
-                <p className="text-xs" style={{ color: "var(--text-muted)" }}>No visits recorded yet</p>
-              </div>
+              <div className="text-center py-10"><div className="text-3xl mb-2 opacity-20">☕</div><p className="text-xs" style={{ color: "var(--text-muted)" }}>No visits recorded yet</p></div>
             ) : (
               <div className="space-y-2">
                 {recentVisits.map((v) => (
@@ -146,18 +129,12 @@ export default function Dashboard() {
                       {v.customers?.name?.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium truncate group-hover:underline" style={{ color: "var(--text)", textUnderlineOffset: 3 }}>
-                        {v.customers?.name}
-                      </div>
+                      <div className="text-sm font-medium truncate group-hover:underline" style={{ color: "var(--text)", textUnderlineOffset: 3 }}>{v.customers?.name}</div>
                       <div className="text-xs truncate" style={{ color: "var(--text-muted)" }}>{v.customers?.phone}</div>
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <div className="text-xs" style={{ color: "var(--warm)" }}>
-                        {formatDistanceToNow(new Date(v.visited_at), { addSuffix: true })}
-                      </div>
-                      <div className="text-xs mt-0.5" style={{ color: "var(--text-faint)" }}>
-                        {format(new Date(v.visited_at), "h:mm a")}
-                      </div>
+                      <div className="text-xs" style={{ color: "var(--warm)" }}>{formatDistanceToNow(new Date(v.visited_at), { addSuffix: true })}</div>
+                      <div className="text-xs mt-0.5" style={{ color: "var(--text-faint)" }}>{format(new Date(v.visited_at), "h:mm a")}</div>
                     </div>
                   </div>
                 ))}
@@ -165,21 +142,12 @@ export default function Dashboard() {
             )}
           </div>
 
-          {/* Top customers */}
           <div className="surface rounded-sm" style={{ padding: "1.25rem" }}>
-            <h2 className="text-xs uppercase tracking-widest font-medium mb-4" style={{ color: "var(--text-muted)" }}>
-              Top Regulars
-            </h2>
+            <h2 className="text-xs uppercase tracking-widest font-medium mb-4" style={{ color: "var(--text-muted)" }}>Top Regulars</h2>
             {loading ? (
-              <div className="space-y-3">
-                {[...Array(5)].map((_, i) => (
-                  <div key={i} className="h-10 rounded-sm animate-pulse" style={{ background: "var(--surface2)" }} />
-                ))}
-              </div>
+              <div className="space-y-3">{[...Array(5)].map((_, i) => <div key={i} className="h-10 rounded-sm animate-pulse" style={{ background: "var(--surface2)" }} />)}</div>
             ) : topCustomers.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-xs" style={{ color: "var(--text-muted)" }}>No data yet</p>
-              </div>
+              <div className="text-center py-8"><p className="text-xs" style={{ color: "var(--text-muted)" }}>No data yet</p></div>
             ) : (
               <div className="space-y-2">
                 {topCustomers.map((c, i) => (
@@ -189,33 +157,24 @@ export default function Dashboard() {
                     onClick={() => setSelectedCustomer(c)}
                     onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--warm)")}
                     onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--border)")}>
-                    <span className="text-xs w-4 text-center flex-shrink-0 font-bold"
-                      style={{ color: i === 0 ? "var(--warm)" : "var(--text-faint)" }}>
-                      {i + 1}
-                    </span>
+                    <span className="text-xs w-4 text-center flex-shrink-0 font-bold" style={{ color: i === 0 ? "var(--warm)" : "var(--text-faint)" }}>{i + 1}</span>
                     <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 font-display font-bold text-xs"
                       style={{ background: "var(--surface3)", color: "var(--warm)" }}>
                       {c.name.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-xs font-medium truncate group-hover:underline" style={{ color: "var(--text)", textUnderlineOffset: 3 }}>
-                        {c.name}
-                      </div>
+                      <div className="text-xs font-medium truncate group-hover:underline" style={{ color: "var(--text)", textUnderlineOffset: 3 }}>{c.name}</div>
                     </div>
                     <span className="badge badge-warm flex-shrink-0">{c.visit_count} visits</span>
                   </div>
                 ))}
               </div>
             )}
-
-            <Link href="/customers" className="btn btn-ghost w-full mt-4 justify-center" style={{ fontSize: 10 }}>
-              View All Members
-            </Link>
+            <Link href="/customers" className="btn btn-ghost w-full mt-4 justify-center" style={{ fontSize: 10 }}>View All Members</Link>
           </div>
         </div>
       </div>
 
-      {/* Customer detail modal — opened from dashboard */}
       {selectedCustomer && (
         <CustomerDetailModal
           customer={selectedCustomer}
