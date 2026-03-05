@@ -14,10 +14,19 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
   const [visits, setVisits] = useState<Visit[]>([]);
   const [loadingVisits, setLoadingVisits] = useState(true);
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ name: customer.name, phone: customer.phone, email: customer.email ?? "", notes: customer.notes ?? "" });
-  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    name:            customer.name,
+    phone:           customer.phone,
+    email:           customer.email ?? "",
+    notes:           customer.notes ?? "",
+    access_code:     customer.access_code ?? "",
+    card_issue_date: customer.card_issue_date ?? "",
+    expiry_date:     customer.expiry_date ?? "",
+    free_coffee:     customer.free_coffee ?? false,
+  });
+  const [saving, setSaving]       = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
-  const [tab, setTab] = useState<"details" | "visits" | "qr">("details");
+  const [tab, setTab]             = useState<"details" | "visits" | "qr">("details");
 
   useEffect(() => {
     supabase.from("visits").select("*").eq("customer_id", customer.id)
@@ -36,8 +45,14 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
   async function handleSave() {
     setSaving(true);
     const { error } = await supabase.from("customers").update({
-      name: form.name.trim(), phone: form.phone.trim(),
-      email: form.email.trim() || null, notes: form.notes.trim() || null,
+      name:            form.name.trim(),
+      phone:           form.phone.trim(),
+      email:           form.email.trim() || null,
+      notes:           form.notes.trim() || null,
+      access_code:     form.access_code.trim() || null,
+      card_issue_date: form.card_issue_date || null,
+      expiry_date:     form.expiry_date || null,
+      free_coffee:     form.free_coffee,
     }).eq("id", customer.id);
     setSaving(false);
     if (!error) { setEditing(false); onUpdate(); }
@@ -62,6 +77,12 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
     a.click();
   }
 
+  // Check expiry status
+  const isExpired = customer.expiry_date ? new Date(customer.expiry_date) < new Date() : false;
+  const expiresLabel = customer.expiry_date
+    ? `${format(new Date(customer.expiry_date), "MMM d, yyyy")} ${isExpired ? "· Expired" : ""}`
+    : "—";
+
   const tabs = [
     { key: "details", label: "Details" },
     { key: "visits",  label: `Visits (${customer.visit_count})` },
@@ -76,21 +97,29 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
         {/* Header */}
         <div className="flex items-center justify-between p-5 flex-shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-full flex items-center justify-center font-display font-black text-xl"
+            <div className="w-11 h-11 rounded-full flex items-center justify-center font-display font-black text-xl flex-shrink-0"
               style={{ background: "var(--surface2)", color: "var(--warm)", border: "1px solid var(--border2)" }}>
               {customer.name.charAt(0).toUpperCase()}
             </div>
             <div>
               <h2 className="font-display text-lg font-bold leading-tight" style={{ color: "var(--text)" }}>{customer.name}</h2>
-              <div className="flex items-center gap-2 mt-0.5">
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
                 <span className={`badge ${customer.is_active ? "badge-green" : "badge-red"}`}>
                   {customer.is_active ? "Active" : "Inactive"}
                 </span>
                 <span className="badge badge-warm">{customer.visit_count} visits</span>
+                {customer.free_coffee && (
+                  <span className="badge" style={{ background: "rgba(251,191,36,0.1)", color: "#FBBF24", border: "1px solid rgba(251,191,36,0.25)" }}>
+                    ☕ Free Coffee
+                  </span>
+                )}
+                {isExpired && (
+                  <span className="badge badge-red">Expired</span>
+                )}
               </div>
             </div>
           </div>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-sm"
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-sm flex-shrink-0"
             style={{ color: "var(--text-muted)", border: "1px solid var(--border)" }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M18 6L6 18M6 6l12 12"/>
@@ -119,42 +148,156 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
 
           {/* ── Details tab ── */}
           {tab === "details" && (
-            <div className="space-y-4">
+            <div>
               {editing ? (
-                <>
-                  {[
-                    { label: "Full Name", key: "name", type: "text", placeholder: "Juan dela Cruz" },
-                    { label: "Phone", key: "phone", type: "tel", placeholder: "+63 912 345 6789" },
-                    { label: "Email", key: "email", type: "email", placeholder: "juan@email.com" },
-                  ].map((f) => (
-                    <div key={f.key}>
-                      <label className="field-label">{f.label}</label>
-                      <input className="input-field" type={f.type} placeholder={f.placeholder}
-                        value={(form as any)[f.key]}
-                        onChange={(e) => setForm({ ...form, [f.key]: e.target.value })} />
-                    </div>
-                  ))}
+                <div className="space-y-4">
+                  {/* Basic info section */}
                   <div>
-                    <label className="field-label">Notes</label>
-                    <textarea className="input-field" rows={3} style={{ resize: "vertical" }}
-                      value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-                  </div>
-                </>
-              ) : (
-                <div className="space-y-0">
-                  {[
-                    { label: "Phone",        value: customer.phone },
-                    { label: "Email",        value: customer.email ?? "—" },
-                    { label: "Notes",        value: customer.notes ?? "—" },
-                    { label: "Member Since", value: format(new Date(customer.created_at), "MMMM d, yyyy") },
-                    { label: "Last Visit",   value: customer.last_visit ? format(new Date(customer.last_visit), "MMM d, yyyy · h:mm a") : "Never" },
-                    { label: "Total Visits", value: `${customer.visit_count} visits` },
-                  ].map((row) => (
-                    <div key={row.label} className="flex gap-4 py-3" style={{ borderBottom: "1px solid var(--border)" }}>
-                      <span className="text-xs uppercase tracking-wider w-28 flex-shrink-0 pt-0.5" style={{ color: "var(--text-muted)" }}>{row.label}</span>
-                      <span className="text-xs" style={{ color: "var(--text)" }}>{row.value}</span>
+                    <p className="text-xs uppercase tracking-widest mb-3 pb-2"
+                      style={{ color: "var(--warm)", borderBottom: "1px solid var(--border)" }}>
+                      Basic Info
+                    </p>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="field-label">Full Name</label>
+                        <input className="input-field" value={form.name}
+                          onChange={(e) => setForm({ ...form, name: e.target.value })} />
+                      </div>
+                      <div>
+                        <label className="field-label">Phone</label>
+                        <input className="input-field" type="tel" value={form.phone}
+                          onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+                      </div>
+                      <div>
+                        <label className="field-label">Email</label>
+                        <input className="input-field" type="email" value={form.email}
+                          onChange={(e) => setForm({ ...form, email: e.target.value })} />
+                      </div>
+                      <div>
+                        <label className="field-label">Notes</label>
+                        <textarea className="input-field" rows={2} style={{ resize: "vertical" }}
+                          value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+                      </div>
                     </div>
-                  ))}
+                  </div>
+
+                  {/* Membership section */}
+                  <div>
+                    <p className="text-xs uppercase tracking-widest mb-3 pb-2"
+                      style={{ color: "var(--warm)", borderBottom: "1px solid var(--border)" }}>
+                      Membership
+                    </p>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="field-label">Access Code</label>
+                        <input className="input-field" placeholder="e.g. 0123" value={form.access_code}
+                          onChange={(e) => setForm({ ...form, access_code: e.target.value })} />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="field-label">Card Issue Date</label>
+                          <input className="input-field" type="date" value={form.card_issue_date}
+                            onChange={(e) => setForm({ ...form, card_issue_date: e.target.value })} />
+                        </div>
+                        <div>
+                          <label className="field-label">Expiry Date</label>
+                          <input className="input-field" type="date" value={form.expiry_date}
+                            onChange={(e) => setForm({ ...form, expiry_date: e.target.value })} />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 rounded-sm"
+                        style={{ background: "var(--surface2)", border: "1px solid var(--border)" }}>
+                        <input type="checkbox" id="free_coffee_edit" checked={form.free_coffee}
+                          onChange={(e) => setForm({ ...form, free_coffee: e.target.checked })}
+                          style={{ width: 14, height: 14, accentColor: "var(--warm)" }} />
+                        <label htmlFor="free_coffee_edit" className="text-xs cursor-pointer" style={{ color: "var(--text)" }}>
+                          Free Coffee Entitlement
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-5">
+
+                  {/* Basic info */}
+                  <div>
+                    <p className="text-xs uppercase tracking-widest mb-3"
+                      style={{ color: "var(--warm)" }}>
+                      Basic Info
+                    </p>
+                    <div className="rounded-sm overflow-hidden" style={{ border: "1px solid var(--border)" }}>
+                      {[
+                        { label: "Phone",        value: customer.phone },
+                        { label: "Email",        value: customer.email ?? "—" },
+                        { label: "Member Since", value: format(new Date(customer.created_at), "MMMM d, yyyy") },
+                        { label: "Last Visit",   value: customer.last_visit ? format(new Date(customer.last_visit), "MMM d, yyyy · h:mm a") : "Never" },
+                        { label: "Notes",        value: customer.notes ?? "—" },
+                      ].map((row, i, arr) => (
+                        <div key={row.label} className="flex gap-4 px-4 py-3"
+                          style={{ borderBottom: i < arr.length - 1 ? "1px solid var(--border)" : "none", background: i % 2 === 0 ? "var(--surface2)" : "transparent" }}>
+                          <span className="text-xs uppercase tracking-wider w-28 flex-shrink-0 pt-0.5"
+                            style={{ color: "var(--text-muted)" }}>{row.label}</span>
+                          <span className="text-xs break-words" style={{ color: "var(--text)" }}>{row.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Membership */}
+                  <div>
+                    <p className="text-xs uppercase tracking-widest mb-3"
+                      style={{ color: "var(--warm)" }}>
+                      Membership
+                    </p>
+                    <div className="rounded-sm overflow-hidden" style={{ border: "1px solid var(--border)" }}>
+                      {[
+                        {
+                          label: "Access Code",
+                          value: customer.access_code ?? "—",
+                          badge: customer.access_code
+                            ? <span className="font-mono text-xs px-2 py-0.5 rounded-sm"
+                                style={{ background: "var(--surface3)", color: "var(--warm)", border: "1px solid var(--border2)" }}>
+                                {customer.access_code}
+                              </span>
+                            : null,
+                        },
+                        {
+                          label: "Card Issued",
+                          value: customer.card_issue_date
+                            ? format(new Date(customer.card_issue_date), "MMMM d, yyyy")
+                            : "—",
+                        },
+                        {
+                          label: "Expiry Date",
+                          value: expiresLabel,
+                          highlight: isExpired,
+                        },
+                        {
+                          label: "Free Coffee",
+                          value: "",
+                          badge: customer.free_coffee != null
+                            ? <span className={`badge ${customer.free_coffee ? "" : "badge-red"}`}
+                                style={customer.free_coffee ? { background: "rgba(251,191,36,0.1)", color: "#FBBF24", border: "1px solid rgba(251,191,36,0.25)" } : {}}>
+                                {customer.free_coffee ? "☕ Yes — Entitled" : "No"}
+                              </span>
+                            : <span className="text-xs" style={{ color: "var(--text-muted)" }}>—</span>,
+                        },
+                      ].map((row, i, arr) => (
+                        <div key={row.label} className="flex items-center gap-4 px-4 py-3"
+                          style={{ borderBottom: i < arr.length - 1 ? "1px solid var(--border)" : "none", background: i % 2 === 0 ? "var(--surface2)" : "transparent" }}>
+                          <span className="text-xs uppercase tracking-wider w-28 flex-shrink-0"
+                            style={{ color: "var(--text-muted)" }}>{row.label}</span>
+                          {row.badge ?? (
+                            <span className="text-xs" style={{ color: (row as any).highlight ? "var(--red)" : "var(--text)" }}>
+                              {row.value}
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
                 </div>
               )}
             </div>
@@ -205,28 +348,19 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
           {/* ── QR Code tab ── */}
           {tab === "qr" && (
             <div className="flex flex-col items-center gap-4">
-
-              {/* QR preview card */}
               <div className="rounded-sm overflow-hidden" style={{ background: "#FFFFFF", border: "1px solid var(--border2)" }}>
-                {/* Mini card header */}
                 <div style={{ background: "#0A0A0A", padding: "12px 16px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-                    <svg width="14" height="14" viewBox="0 0 36 36" fill="none">
-                      <ellipse cx="18" cy="21" rx="11" ry="8" stroke="#C8B89A" strokeWidth="1.5" fill="none"/>
-                      <path d="M11 18 Q18 12 25 18" stroke="#C8B89A" strokeWidth="1.3" fill="none"/>
-                    </svg>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: "#FFF", fontFamily: "serif" }}>
-                      Kape<span style={{ color: "#C8B89A" }}>Guid</span>
-                    </span>
-                  </div>
                   <div style={{ fontSize: 14, fontWeight: 700, color: "#FFF", fontFamily: "serif" }}>{customer.name}</div>
+                  {customer.access_code && (
+                    <div style={{ fontSize: 10, color: "#9A9080", marginTop: 2, letterSpacing: "0.08em" }}>
+                      CODE {customer.access_code}
+                    </div>
+                  )}
                 </div>
-                {/* QR image */}
-                {qrDataUrl ? (
-                  <img src={qrDataUrl} alt="QR Code" style={{ display: "block", width: 200, height: 200, margin: "16px auto" }} />
-                ) : (
-                  <div className="w-48 h-48 m-4 animate-pulse rounded-sm" style={{ background: "#F5F5F5" }} />
-                )}
+                {qrDataUrl
+                  ? <img src={qrDataUrl} alt="QR Code" style={{ display: "block", width: 200, height: 200, margin: "16px auto" }} />
+                  : <div className="w-48 h-48 m-4 animate-pulse rounded-sm" style={{ background: "#F5F5F5" }} />
+                }
                 <div style={{ padding: "8px 16px 14px", textAlign: "center", background: "#FAFAF8" }}>
                   <p style={{ fontSize: 9, color: "#999", wordBreak: "break-all", fontFamily: "monospace" }}>
                     {customer.qr_code}
@@ -234,15 +368,13 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
                 </div>
               </div>
 
-              {/* Instructions */}
               <div className="w-full p-3 rounded-sm" style={{ background: "rgba(200,184,154,0.05)", border: "1px solid rgba(200,184,154,0.2)" }}>
                 <p className="text-xs" style={{ color: "var(--text-muted)" }}>
                   <span style={{ color: "var(--warm)" }}>How it works:</span> Give this printed card to the customer.
-                  When they visit, the cashier opens <strong style={{ color: "var(--text)" }}>Scan QR</strong> and points the camera at this card to log the visit instantly.
+                  Staff scan it on the <strong style={{ color: "var(--text)" }}>Scan QR</strong> page to log visits instantly.
                 </p>
               </div>
 
-              {/* Action buttons */}
               <div className="w-full grid grid-cols-2 gap-2">
                 <button className="btn btn-ghost justify-center" onClick={handleDownloadQR}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -259,10 +391,6 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
                   Print Card
                 </Link>
               </div>
-
-              <p className="text-xs text-center" style={{ color: "var(--text-faint)" }}>
-                Opens a full print-ready card page in a new tab
-              </p>
             </div>
           )}
         </div>

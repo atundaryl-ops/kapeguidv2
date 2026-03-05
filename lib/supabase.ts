@@ -16,6 +16,11 @@ export type Customer = {
   last_visit: string | null;
   created_at: string;
   is_active: boolean;
+  // Extended fields from import
+  card_issue_date: string | null;
+  expiry_date: string | null;
+  access_code: string | null;
+  free_coffee: boolean | null;
 };
 
 export type Visit = {
