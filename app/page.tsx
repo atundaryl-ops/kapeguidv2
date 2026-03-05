@@ -21,7 +21,7 @@ export default function Home() {
             </svg>
           </div>
           <h1 className="font-display text-4xl font-black tracking-tight" style={{ color: "var(--text)" }}>
-            Kape<span style={{ color: "var(--warm)" }}>Guid</span>
+            kape<span style={{ color: "var(--warm)" }}>guid.</span>
           </h1>
           <p className="mt-2 text-xs tracking-widest uppercase" style={{ color: "var(--text-muted)" }}>
             Coffee Shop · Customer System

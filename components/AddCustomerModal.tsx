@@ -37,6 +37,7 @@ export default function AddCustomerModal({ onClose, onSuccess }: Props) {
 
   function validate() {
     const e: Record<string, string> = {};
+    if (!form.card_issue_date) e.card_issue_date = "Card issue date is required";
     if (!form.first_name.trim()) e.first_name = "First name is required";
     if (!form.last_name.trim())  e.last_name  = "Last name is required";
     if (!form.phone.trim())      e.phone      = "Phone is required";
@@ -231,9 +232,10 @@ export default function AddCustomerModal({ onClose, onSuccess }: Props) {
                   value={form.access_code} onChange={(e) => setForm({ ...form, access_code: e.target.value })} />
               </div>
               <div>
-                <label className="field-label">Card Issue Date</label>
-                <input className="input-field" type="date"
-                  value={form.card_issue_date} onChange={(e) => handleIssueDateChange(e.target.value)} />
+                <label className="field-label">Card Issue Date *</label>
+                      <input className="input-field" type="date"
+                        value={form.card_issue_date} onChange={(e) => handleIssueDateChange(e.target.value)} />
+                      {errors.card_issue_date && <p className="text-xs mt-1" style={{ color: "var(--red)" }}>{errors.card_issue_date}</p>}
                 {form.expiry_date && (
                   <p className="text-xs mt-1.5" style={{ color: "var(--text-muted)" }}>
                     ◈ Expiry auto-set to: <span style={{ color: "var(--warm-light)", fontWeight: 600 }}>{form.expiry_date}</span>

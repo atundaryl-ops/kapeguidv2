@@ -34,11 +34,20 @@ export default function ScanPage() {
     }
 
     // Record visit
+    // Block if card is expired
+    const isExpired = data.expiry_date && new Date(data.expiry_date) < new Date();
+    if (isExpired) {
+      setState("unknown");
+      setErrorMsg(`${data.first_name ?? data.name}'s card expired on ${new Date(data.expiry_date).toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" })}. Please renew their membership.`);
+      return;
+    }
+
+    // Record visit
     await supabase.from("visits").insert({ customer_id: data.id, visited_at: new Date().toISOString() });
     setCustomer(data);
     setRedeemed(false);
     setState("success");
-  }
+      }
 
   async function handleRedeemCoffee() {
     if (!customer) return;

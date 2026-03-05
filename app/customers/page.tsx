@@ -137,8 +137,14 @@ function CustomersContent() {
                       <td style={{ padding: "12px 14px" }}><span className="badge badge-warm">{c.visit_count}</span></td>
                       <td style={{ padding: "12px 14px" }}><span className="text-xs" style={{ color: "var(--text-muted)" }}>{c.last_visit ? format(new Date(c.last_visit), "MMM d, yyyy") : "Never"}</span></td>
                       <td style={{ padding: "12px 14px" }}>
-                        <span className={`badge ${c.is_active ? "badge-green" : "badge-gray"}`}>{c.is_active ? "Active" : "Inactive"}</span>
-                      </td>
+                          {(() => {
+                            const expired = c.expiry_date && new Date(c.expiry_date) < new Date();
+                            return (
+                              <span className={`badge ${expired ? "badge-red" : c.is_active ? "badge-green" : "badge-gray"}`}>
+                                {expired ? "Expired" : c.is_active ? "Active" : "Inactive"}
+                              </span>
+                            );
+                          })()}                      </td>
                       <td style={{ padding: "12px 14px" }}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: "var(--text-faint)" }}><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                       </td>

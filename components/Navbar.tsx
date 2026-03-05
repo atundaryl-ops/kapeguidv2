@@ -10,10 +10,9 @@ const Logo = () => (
       background: "var(--warm)", display: "flex", alignItems: "center", justifyContent: "center",
       flexShrink: 0,
     }}>
-      <span style={{ color: "#000", fontFamily: "Poppins, sans-serif", fontWeight: 900, fontSize: 18, lineHeight: 1, marginTop: -1 }}>!</span>
-    </div>
+    <span style={{ color: "#FFFFFF", fontFamily: "Poppins, sans-serif", fontWeight: 900, fontSize: 18, lineHeight: 1, marginTop: -1 }}>!</span>    </div>
     <span style={{ fontFamily: "Poppins, sans-serif", fontWeight: 800, fontSize: 18, color: "var(--text)", letterSpacing: "-0.02em" }}>
-      Kape<span style={{ color: "var(--warm-light)" }}>Guid</span>
+      kape<span style={{ color: "var(--warm-light)" }}>guid.</span>
     </span>
   </div>
 );

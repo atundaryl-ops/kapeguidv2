@@ -5,21 +5,21 @@
 @tailwind utilities;
 
 :root {
-  --bg:          #0A0A0A;
-  --surface:     #111111;
-  --surface2:    #1A1A1A;
-  --surface3:    #222222;
-  --border:      #2A2A2A;
-  --border2:     #363636;
-  --text:        #F5F5F5;
-  --text-muted:  #888888;
-  --text-faint:  #444444;
-  --warm:        #8B6343;
-  --warm-light:  #C49A6C;
-  --warm-dim:    #5C3D20;
-  --green:       #6FCF97;
-  --amber:       #F2C94C;
-  --red:         #EB5757;
+  --bg:          #FFFFFF;
+  --surface:     #F5F5F5;
+  --surface2:    #EEEEEE;
+  --surface3:    #E5E5E5;
+  --border:      #DDDDDD;
+  --border2:     #CCCCCC;
+  --text:        #0A0A0A;
+  --text-muted:  #666666;
+  --text-faint:  #AAAAAA;
+  --warm:        #0A0A0A;
+  --warm-light:  #0A0A0A;
+  --warm-dim:    #444444;
+  --green:       #1A7A3F;
+  --amber:       #B45309;
+  --red:         #C0392B;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -37,8 +37,7 @@ body {
 body::after {
   content: '';
   position: fixed; inset: 0;
-  background-image: radial-gradient(circle, rgba(255,255,255,0.025) 1px, transparent 1px);
-  background-size: 32px 32px;
+  background-image: radial-gradient(circle, rgba(0,0,0,0.06) 1px, transparent 1px);  background-size: 32px 32px;
   pointer-events: none; z-index: 0;
 }
 
@@ -54,7 +53,7 @@ body::after {
   cursor: pointer; border-radius: 4px; transition: all 0.18s;
   outline: none; text-decoration: none;
 }
-.btn-primary { background: var(--text); color: #000; border: none; }
+.btn-primary { background: var(--text); color: #FFFFFF; border: none; }
 .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
 .btn-ghost   { background: transparent; color: var(--text); border: 1px solid var(--border); }
 .btn-ghost:hover { border-color: var(--text-muted); }
@@ -89,7 +88,6 @@ body::after {
 .badge-red   { background: rgba(235,87,87,0.08);  color: var(--red);   border: 1px solid rgba(235,87,87,0.2); }
 .badge-warm  { background: rgba(139,99,67,0.12);  color: var(--warm-light); border: 1px solid rgba(139,99,67,0.3); }
 .badge-amber { background: rgba(242,201,76,0.1);  color: var(--amber); border: 1px solid rgba(242,201,76,0.25); }
-.badge-gray  { background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid var(--border); }
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 4px; height: 4px; }

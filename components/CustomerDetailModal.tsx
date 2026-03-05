@@ -55,6 +55,8 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
     const fullName = form.first_name
       ? `${form.first_name} ${form.middle_name ? form.middle_name + " " : ""}${form.last_name}`.trim()
       : form.name;
+    
+    const isStillActive = form.expiry_date ? new Date(form.expiry_date) > new Date() : false;
     const { error } = await supabase.from("customers").update({
       name:            fullName,
       first_name:      form.first_name.trim() || null,
@@ -67,7 +69,9 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
       card_issue_date: form.card_issue_date || null,
       expiry_date:     form.expiry_date || null,
       free_coffee:     form.free_coffee,
+      is_active:       isStillActive,
     }).eq("id", customer.id);
+
     setSaving(false);
     if (!error) { setEditing(false); onUpdate(); }
   }
@@ -84,6 +88,30 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
 
   async function toggleActive() {
     await supabase.from("customers").update({ is_active: !customer.is_active }).eq("id", customer.id);
+    onUpdate();
+  }
+
+  async function handleRenew() {
+    if (!confirm(`Renew ${getDisplayName(customer)}'s card? This sets today as the new issue date + 1 year expiry.`)) return;
+    const newIssue  = new Date().toISOString().slice(0, 10);
+    const newExpiry = new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().slice(0, 10);
+    await supabase.from("customers").update({
+      card_issue_date: newIssue,
+      expiry_date:     newExpiry,
+      is_active:       true,
+      free_coffee:     true,
+    }).eq("id", customer.id);
+    onUpdate();
+  }
+
+  async function handleExtend() {
+    if (!confirm(`Extend ${getDisplayName(customer)}'s card by 1 year?`)) return;
+    const currentExpiry = customer.expiry_date ?? new Date().toISOString().slice(0, 10);
+    const newExpiry = new Date(new Date(currentExpiry).setFullYear(new Date(currentExpiry).getFullYear() + 1)).toISOString().slice(0, 10);
+    await supabase.from("customers").update({
+        expiry_date: newExpiry,
+        is_active:   true,
+      }).eq("id", customer.id);
     onUpdate();
   }
 
@@ -125,14 +153,14 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
             <div>
               <h2 style={{ fontSize: 16, fontWeight: 800, color: "var(--text)", lineHeight: 1.2 }}>{displayName}</h2>
               <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                <span className={`badge ${customer.is_active ? "badge-green" : "badge-gray"}`}>
-                  {customer.is_active ? "Active" : "Inactive"}
+                <span className={`badge ${isExpired ? "badge-gray" : customer.is_active ? "badge-green" : "badge-gray"}`}>
+                  {isExpired ? "Inactive" : customer.is_active ? "Active" : "Inactive"}
                 </span>
                 <span className="badge badge-warm">{customer.visit_count} visits</span>
-                {customer.free_coffee && (
+                {customer.free_coffee && !isExpired && (
                   <span className="badge badge-amber">☕ Free Coffee</span>
                 )}
-                {isExpired && <span className="badge badge-gray">Expired</span>}
+                
               </div>
             </div>
           </div>
@@ -265,11 +293,15 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
                         style={{ background: customer.free_coffee ? "rgba(242,201,76,0.04)" : "transparent" }}>
                         <div className="flex items-center gap-4">
                           <span className="text-xs font-semibold uppercase tracking-wider w-28 flex-shrink-0" style={{ color: "var(--text-muted)" }}>Free Coffee</span>
-                          <span className={`badge ${customer.free_coffee ? "badge-amber" : "badge-gray"}`}>
-                            {customer.free_coffee ? "☕ Entitled" : "Not Eligible"}
-                          </span>
+                          <span className={`badge ${customer.free_coffee && !isExpired ? "badge-amber" : "badge-gray"}`}>
+                              {isExpired
+                                ? "Not Eligible"
+                                : customer.free_coffee
+                                ? "☕ Entitled"
+                                : "✓ Redeemed This Month"}
+                            </span>
                         </div>
-                        {customer.free_coffee && !redeemConfirm && (
+                        {customer.free_coffee && !redeemConfirm && !isExpired && (
                           <button className="btn" style={{ padding: "4px 10px", fontSize: 10, background: "rgba(242,201,76,0.1)", color: "var(--amber)", border: "1px solid rgba(242,201,76,0.3)" }}
                             onClick={() => setRedeemConfirm(true)}>
                             Redeem ☕
@@ -361,24 +393,41 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
         </div>
 
         {/* Footer */}
-        <div className="flex gap-2 p-5 flex-shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
-          {editing ? (
-            <>
-              <button className="btn btn-ghost flex-1 justify-center" onClick={() => setEditing(false)} disabled={saving}>Cancel</button>
-              <button className="btn btn-primary flex-1 justify-center" onClick={handleSave} disabled={saving}>{saving ? "Saving…" : "Save Changes"}</button>
-            </>
-          ) : (
-            <>
-              <button className="btn btn-ghost" onClick={() => setEditing(true)}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                Edit
-              </button>
-              <button className="btn btn-warm flex-1 justify-center" onClick={toggleActive}>
-                {customer.is_active ? "Deactivate" : "Activate"}
-              </button>
-              <button className="btn btn-danger" onClick={deleteCustomer} title="Delete">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>
-              </button>
+            <div className="flex gap-2 p-5 flex-shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
+              {editing ? (
+                <>
+                  <button className="btn btn-ghost flex-1 justify-center" onClick={() => setEditing(false)} disabled={saving}>Cancel</button>
+                  <button className="btn btn-primary flex-1 justify-center" onClick={handleSave} disabled={saving}>{saving ? "Saving…" : "Save Changes"}</button>
+                </>
+              ) : (
+                <>
+                <button className="btn btn-ghost" onClick={() => setEditing(true)}>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      Edit
+    </button>
+
+    {isExpired ? (
+      /* Card is expired — show only Renew */
+      <button className="btn btn-primary flex-1 justify-center" onClick={handleRenew}>
+        🔄 Renew Card
+      </button>
+    ) : (
+      /* Card is active — show Deactivate + Extend side by side */
+      <>
+        <button className="btn btn-warm flex-1 justify-center" onClick={toggleActive}>
+          {customer.is_active ? "Deactivate" : "Activate"}
+        </button>
+        {customer.expiry_date && (
+            <button className="btn btn-ghost flex-1 justify-center" onClick={handleExtend}>
+              + Extend 1yr
+            </button>
+)}
+      </>
+    )}
+
+    <button className="btn btn-danger" onClick={deleteCustomer} title="Delete">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>
+    </button>
             </>
           )}
         </div>
