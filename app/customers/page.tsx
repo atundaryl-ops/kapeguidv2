@@ -19,6 +19,8 @@ function CustomersContent() {
   const [filter, setFilter]       = useState<FilterType>((searchParams.get("status") as FilterType) ?? "all");
   const [showAdd, setShowAdd]     = useState(false);
   const [selected, setSelected]   = useState<Customer | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [selectMode, setSelectMode] = useState(false);
 
   const fetchCustomers = useCallback(async () => {
     const { data } = await supabase.from("customers").select("*").order("created_at", { ascending: false });
@@ -43,19 +45,28 @@ function CustomersContent() {
     setFiltered(list);
   }, [search, customers, filter]);
 
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+
   const counts = {
-  all:      customers.length,
-  active:   customers.filter((c) => c.is_active).length,
-  inactive: customers.filter((c) => !c.is_active && c.payment_status !== "submitted" && c.payment_status !== "rejected").length,
-  pending:  customers.filter((c) => c.payment_status === "submitted").length,
-  rejected: customers.filter((c) => c.payment_status === "rejected").length,
-};
+    all:      customers.length,
+    active:   customers.filter((c) => c.is_active).length,
+    inactive: customers.filter((c) => !c.is_active && c.payment_status !== "submitted" && c.payment_status !== "rejected").length,
+    pending:  customers.filter((c) => c.payment_status === "submitted").length,
+    rejected: customers.filter((c) => c.payment_status === "rejected").length,
+  };
 
   return (
     <div className="min-h-screen" style={{ background: "var(--bg)" }}>
       <Navbar />
       <div className="relative z-10 max-w-6xl mx-auto px-4 py-8">
 
+        {/* Header */}
         <div className="flex items-start justify-between mb-6 animate-fade-in">
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: "var(--warm-light)" }}>
@@ -80,8 +91,8 @@ function CustomersContent() {
             value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
 
-        {/* Filter tabs */}
-        <div className="flex gap-2 mb-6">
+        {/* Filter tabs + Select */}
+        <div className="flex items-center gap-2 mb-6 flex-wrap">
           {(["all", "active", "inactive", "pending", "rejected"] as FilterType[]).map((f) => (
             <button key={f} onClick={() => setFilter(f)} className="btn"
               style={{
@@ -106,6 +117,53 @@ function CustomersContent() {
               )}
             </button>
           ))}
+
+          {/* Divider */}
+          <div style={{ width: 1, height: 20, background: "var(--border)", margin: "0 4px" }} />
+
+          {/* Select / Select All / Delete / Cancel */}
+          {selectMode ? (
+            <>
+              <label className="flex items-center gap-2 cursor-pointer" style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600 }}>
+                <input type="checkbox"
+                  checked={filtered.length > 0 && filtered.every((c) => selectedIds.has(c.id))}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedIds(new Set(filtered.map((c) => c.id)));
+                    } else {
+                      setSelectedIds(new Set());
+                    }
+                  }}
+                  style={{ width: 14, height: 14, accentColor: "var(--warm)", cursor: "pointer" }} />
+                Select All
+              </label>
+
+              {selectedIds.size > 0 && (
+                <button className="btn btn-danger" style={{ padding: "5px 12px", fontSize: 11 }}
+                  onClick={async () => {
+                    if (!confirm(`Delete ${selectedIds.size} account(s)? This cannot be undone.`)) return;
+                    await Promise.all(Array.from(selectedIds).map(id =>
+                      supabase.from("customers").delete().eq("id", id)
+                    ));
+                    setSelectedIds(new Set());
+                    setSelectMode(false);
+                    fetchCustomers();
+                  }}>
+                  🗑 {selectedIds.size}
+                </button>
+              )}
+
+              <button className="btn btn-ghost" style={{ padding: "5px 12px", fontSize: 11 }}
+                onClick={() => { setSelectMode(false); setSelectedIds(new Set()); }}>
+                ✕
+              </button>
+            </>
+          ) : (
+            <button className="btn btn-ghost" onClick={() => setSelectMode(true)}
+              style={{ padding: "5px 14px", fontSize: 11 }}>
+              Select
+            </button>
+          )}
         </div>
 
         {loading ? (
@@ -125,8 +183,8 @@ function CustomersContent() {
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr style={{ borderBottom: "1px solid var(--border)" }}>
-                    {["Customer", "Phone", "Email", "Visits", "Last Visit", "Status", ""].map((h) => (
-                      <th key={h} style={{ padding: "10px 14px", textAlign: "left" }}>
+                    {[...(selectMode ? [""] : []), "Customer", "Phone", "Email", "Visits", "Last Visit", "Status", ""].map((h, i) => (
+                      <th key={i} style={{ padding: "10px 14px", textAlign: "left" }}>
                         <span className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>{h}</span>
                       </th>
                     ))}
@@ -134,10 +192,18 @@ function CustomersContent() {
                 </thead>
                 <tbody>
                   {filtered.map((c) => (
-                    <tr key={c.id} className="cursor-pointer transition-colors" style={{ borderBottom: "1px solid var(--border)" }}
-                      onClick={() => setSelected(c)}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface2)")}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+                    <tr key={c.id} className="cursor-pointer transition-colors"
+                      style={{ borderBottom: "1px solid var(--border)", background: selectedIds.has(c.id) ? "rgba(139,99,67,0.06)" : "transparent" }}
+                      onClick={() => selectMode ? toggleSelect(c.id) : setSelected(c)}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = selectedIds.has(c.id) ? "rgba(139,99,67,0.06)" : "var(--surface2)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = selectedIds.has(c.id) ? "rgba(139,99,67,0.06)" : "transparent")}>
+                      {selectMode && (
+                        <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                          <input type="checkbox" checked={selectedIds.has(c.id)}
+                            onChange={() => toggleSelect(c.id)}
+                            style={{ width: 15, height: 15, accentColor: "var(--warm)", cursor: "pointer" }} />
+                        </td>
+                      )}
                       <td style={{ padding: "12px 14px" }}>
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0"
@@ -152,22 +218,23 @@ function CustomersContent() {
                       <td style={{ padding: "12px 14px" }}><span className="badge badge-warm">{c.visit_count}</span></td>
                       <td style={{ padding: "12px 14px" }}><span className="text-xs" style={{ color: "var(--text-muted)" }}>{c.last_visit ? format(new Date(c.last_visit), "MMM d, yyyy") : "Never"}</span></td>
                       <td style={{ padding: "12px 14px" }}>
-                          {(() => {
-                              const expired = c.expiry_date && new Date(c.expiry_date) < new Date();
-                              return (
-                                <span className={`badge ${
-                                  c.payment_status === "rejected" ? "badge-red" :
-                                  c.payment_status === "submitted" ? "badge-amber" :
-                                  expired ? "badge-red" :
-                                  c.is_active ? "badge-green" : "badge-gray"
-                                }`}>
-                                  {c.payment_status === "rejected" ? "Rejected" :
-                                  c.payment_status === "submitted" ? "Pending" :
-                                  expired ? "Expired" :
-                                  c.is_active ? "Active" : "Inactive"}
-                                </span>
-                              );
-                            })()}                    </td>
+                        {(() => {
+                          const expired = c.expiry_date && new Date(c.expiry_date) < new Date();
+                          return (
+                            <span className={`badge ${
+                              c.payment_status === "rejected" ? "badge-red" :
+                              c.payment_status === "submitted" ? "badge-amber" :
+                              expired ? "badge-red" :
+                              c.is_active ? "badge-green" : "badge-gray"
+                            }`}>
+                              {c.payment_status === "rejected" ? "Rejected" :
+                               c.payment_status === "submitted" ? "Pending" :
+                               expired ? "Expired" :
+                               c.is_active ? "Active" : "Inactive"}
+                            </span>
+                          );
+                        })()}
+                      </td>
                       <td style={{ padding: "12px 14px" }}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: "var(--text-faint)" }}><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                       </td>
@@ -180,9 +247,16 @@ function CustomersContent() {
             {/* Mobile */}
             <div className="md:hidden space-y-2">
               {filtered.map((c) => (
-                <div key={c.id} className="surface rounded p-4 cursor-pointer" style={{ border: "1px solid var(--border)" }} onClick={() => setSelected(c)}>
+                <div key={c.id} className="surface rounded p-4 cursor-pointer"
+                  style={{ border: `1px solid ${selectedIds.has(c.id) ? "var(--warm)" : "var(--border)"}`, background: selectedIds.has(c.id) ? "rgba(139,99,67,0.06)" : "var(--surface)" }}
+                  onClick={() => selectMode ? toggleSelect(c.id) : setSelected(c)}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
+                      {selectMode && (
+                        <input type="checkbox" checked={selectedIds.has(c.id)}
+                          onChange={() => toggleSelect(c.id)}
+                          style={{ width: 15, height: 15, accentColor: "var(--warm)", cursor: "pointer", flexShrink: 0 }} />
+                      )}
                       <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold"
                         style={{ background: "rgba(139,99,67,0.15)", color: "var(--warm-light)" }}>
                         {getInitial(c)}
@@ -193,18 +267,18 @@ function CustomersContent() {
                       </div>
                     </div>
                     <div className="text-right">
-                        <span className={`badge ${
-                          c.payment_status === "rejected" ? "badge-red" :
-                          c.payment_status === "submitted" ? "badge-amber" :
-                          c.expiry_date && new Date(c.expiry_date) < new Date() ? "badge-red" :
-                          c.is_active ? "badge-green" : "badge-gray"
-                        }`}>
-                          {c.payment_status === "rejected" ? "Rejected" :
-                          c.payment_status === "submitted" ? "Pending" :
-                          c.expiry_date && new Date(c.expiry_date) < new Date() ? "Expired" :
-                          c.is_active ? "Active" : "Inactive"}
-                        </span>                     
-                        <div className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{c.visit_count} visits</div>
+                      <span className={`badge ${
+                        c.payment_status === "rejected" ? "badge-red" :
+                        c.payment_status === "submitted" ? "badge-amber" :
+                        c.expiry_date && new Date(c.expiry_date) < new Date() ? "badge-red" :
+                        c.is_active ? "badge-green" : "badge-gray"
+                      }`}>
+                        {c.payment_status === "rejected" ? "Rejected" :
+                         c.payment_status === "submitted" ? "Pending" :
+                         c.expiry_date && new Date(c.expiry_date) < new Date() ? "Expired" :
+                         c.is_active ? "Active" : "Inactive"}
+                      </span>
+                      <div className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{c.visit_count} visits</div>
                     </div>
                   </div>
                 </div>

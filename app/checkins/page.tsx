@@ -139,11 +139,7 @@ function CheckinsContent() {
                     <div className="text-xs" style={{ color: "var(--text-muted)" }}>{v.customers?.phone}</div>
                   </div>
 
-                  {/* Visit # badge */}
-                  <span className="badge badge-warm flex-shrink-0">
-                    Visit #{v.customers?.visit_count}
-                  </span>
-
+                  
                   {/* Time */}
                   <div className="text-right flex-shrink-0">
                     <div className="text-xs font-medium" style={{ color: "var(--warm-light)" }}>
