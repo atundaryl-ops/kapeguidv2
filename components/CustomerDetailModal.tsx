@@ -37,15 +37,33 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
   const [showScreenshot, setShowScreenshot] = useState(false);
 
   useEffect(() => {
-    supabase.from("visits").select("*").eq("customer_id", customer.id)
-      .order("visited_at", { ascending: false }).limit(30)
-      .then(({ data }) => { setVisits(data ?? []); setLoadingVisits(false); });
+  // Fetch visits
+  supabase.from("visits").select("*").eq("customer_id", customer.id)
+    .order("visited_at", { ascending: false }).limit(30)
+    .then(({ data }) => { setVisits(data ?? []); setLoadingVisits(false); });
 
-    import("qrcode").then((QRCode) => {
-      QRCode.toDataURL(customer.qr_code, { width: 280, margin: 2, color: { dark: "#000", light: "#FFF" }, errorCorrectionLevel: "H" })
-        .then(setQrDataUrl);
-    });
-  }, [customer]);
+  // Generate QR
+  import("qrcode").then((QRCode) => {
+    QRCode.toDataURL(customer.qr_code, { width: 280, margin: 2, color: { dark: "#000", light: "#FFF" }, errorCorrectionLevel: "H" })
+      .then(setQrDataUrl);
+  });
+
+  // Real-time listener for new visits
+  const ch = supabase.channel(`visits-${customer.id}`)
+    .on("postgres_changes", {
+      event: "INSERT",
+      schema: "public",
+      table: "visits",
+      filter: `customer_id=eq.${customer.id}`,
+    }, () => {
+      supabase.from("visits").select("*").eq("customer_id", customer.id)
+        .order("visited_at", { ascending: false }).limit(30)
+        .then(({ data }) => setVisits(data ?? []));
+    })
+    .subscribe();
+
+  return () => { supabase.removeChannel(ch); };
+}, [customer]);
 
   function handleIssueDateChange(val: string) {
     setForm({ ...form, card_issue_date: val, expiry_date: addOneYear(val) });
