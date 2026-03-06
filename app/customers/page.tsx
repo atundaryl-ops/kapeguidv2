@@ -32,7 +32,7 @@ function CustomersContent() {
     const q = search.toLowerCase();
     let list = customers;
     if (filter === "active")   list = list.filter((c) => c.is_active);
-    if (filter === "inactive") list = list.filter((c) => !c.is_active && c.payment_status !== "submitted");
+    if (filter === "inactive") list = list.filter((c) => !c.is_active && c.payment_status !== "submitted" && c.payment_status !== "rejected");
     if (filter === "pending")  list = list.filter((c) => c.payment_status === "submitted");
     if (filter === "rejected") list = list.filter((c) => c.payment_status === "rejected");
     if (q) list = list.filter((c) =>
@@ -46,7 +46,7 @@ function CustomersContent() {
   const counts = {
   all:      customers.length,
   active:   customers.filter((c) => c.is_active).length,
-  inactive: customers.filter((c) => !c.is_active && c.payment_status !== "submitted").length,
+  inactive: customers.filter((c) => !c.is_active && c.payment_status !== "submitted" && c.payment_status !== "rejected").length,
   pending:  customers.filter((c) => c.payment_status === "submitted").length,
   rejected: customers.filter((c) => c.payment_status === "rejected").length,
 };

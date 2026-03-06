@@ -290,10 +290,10 @@ export default function ScanPage() {
           </div>
         )}
 
-        <style>{`
+       <style dangerouslySetInnerHTML={{ __html: `
           #qr-reader video { object-fit: cover; width: 100% !important; height: 100% !important; border-radius: 0; }
           #qr-reader img, #qr-reader button, #qr-reader > div:last-child { display: none !important; }
-        `}</style>
+        `}} />
       </div>
     </div>
   );

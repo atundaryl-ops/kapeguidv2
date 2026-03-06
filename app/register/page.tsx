@@ -34,8 +34,8 @@ export default function RegisterPage() {
     const e: Record<string, string> = {};
     if (!form.first_name.trim()) e.first_name = "First name is required";
     if (!form.last_name.trim())  e.last_name  = "Last name is required";
-    if (!form.phone.trim())      e.phone      = "Phone number is required";
-    else if (!/^[0-9+\-\s()]{7,15}$/.test(form.phone.trim())) e.phone = "Invalid phone number";
+    if (!form.phone.trim())           e.phone = "Phone number is required";
+    else if (!/^9[0-9]{9}$/.test(form.phone.trim())) e.phone = "Must start with 9 and be 10 digits (e.g. 9171234567)";
     if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Invalid email";
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -70,7 +70,7 @@ export default function RegisterPage() {
       first_name:      form.first_name.trim(),
       middle_name:     form.middle_name.trim() || null,
       last_name:       form.last_name.trim(),
-      phone:           form.phone.trim(),
+      phone:            `+63${form.phone.trim()}`,
       email:           form.email.trim() || null,
       qr_code,
       card_issue_date: today,
@@ -280,9 +280,7 @@ export default function RegisterPage() {
           <p style={{ fontSize: 13, color: "#666", marginTop: 6 }}>
             Register as a member and earn free coffee every month!
           </p>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 20, padding: "5px 12px", marginTop: 10 }}>
-            <span style={{ fontSize: 12, color: "#16A34A", fontWeight: 600 }}>Membership Fee: ₱500 / year</span>
-          </div>
+          
         </div>
 
         {serverError && (
@@ -324,10 +322,21 @@ export default function RegisterPage() {
           <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#888", marginBottom: 14 }}>Contact Info</p>
           <div style={{ marginBottom: 10 }}>
             <label style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "#888", display: "block", marginBottom: 4 }}>Phone Number *</label>
-            <input type="tel"
-              style={{ width: "100%", padding: "9px 11px", borderRadius: 6, border: `1px solid ${errors.phone ? "#FCA5A5" : "#DDD"}`, fontSize: 13, fontFamily: "Poppins, sans-serif", outline: "none" }}
-              placeholder="+63 912 345 6789" value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+            <div style={{ display: "flex", border: `1px solid ${errors.phone ? "#FCA5A5" : "#DDD"}`, borderRadius: 6, overflow: "hidden", background: "#FFF" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 11px", background: "#F5F5F5", borderRight: "1px solid #DDD", flexShrink: 0 }}>
+                        <span style={{ fontSize: 16 }}>🇵🇭</span>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: "#444", fontFamily: "Poppins, sans-serif" }}>+63</span>
+                    </div>
+                    <input type="tel"
+                        style={{ flex: 1, padding: "9px 11px", border: "none", fontSize: 13, fontFamily: "Poppins, sans-serif", outline: "none" }}
+                        placeholder="9XX XXX XXXX"
+                        maxLength={10}
+                        value={form.phone}
+                        onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, "").slice(0, 10);
+                        setForm({ ...form, phone: val });
+                        }} />
+                    </div>
             {errors.phone && <p style={{ fontSize: 10, color: "#DC2626", marginTop: 3 }}>{errors.phone}</p>}
           </div>
           <div>
