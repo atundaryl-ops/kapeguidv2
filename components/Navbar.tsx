@@ -1,24 +1,45 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 const Logo = () => (
   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-    {/* Exclamation mark logo inspired by brand */}
     <div style={{
       width: 32, height: 32, borderRadius: "50%",
       background: "var(--warm)", display: "flex", alignItems: "center", justifyContent: "center",
       flexShrink: 0,
     }}>
-    <span style={{ color: "#FFFFFF", fontFamily: "Poppins, sans-serif", fontWeight: 900, fontSize: 18, lineHeight: 1, marginTop: -1 }}>!</span>    </div>
+      <span style={{ color: "#FFF", fontFamily: "Poppins, sans-serif", fontWeight: 900, fontSize: 18, lineHeight: 1, marginTop: -1 }}>!</span>
+    </div>
     <span style={{ fontFamily: "Poppins, sans-serif", fontWeight: 800, fontSize: 18, color: "var(--text)", letterSpacing: "-0.02em" }}>
-      kape<span style={{ color: "var(--warm-light)" }}>guid.</span>
+      Kape<span style={{ color: "var(--warm-light)" }}>Guid</span>
     </span>
   </div>
 );
 
 export default function Navbar() {
   const path = usePathname();
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    async function fetchPending() {
+      const { count } = await supabase
+        .from("customers")
+        .select("*", { count: "exact", head: true })
+        .eq("payment_status", "submitted");
+      setPendingCount(count ?? 0);
+    }
+
+    fetchPending();
+
+    const ch = supabase.channel("navbar-pending")
+      .on("postgres_changes", { event: "*", schema: "public", table: "customers" }, fetchPending)
+      .subscribe();
+
+    return () => { supabase.removeChannel(ch); };
+  }, []);
 
   const links = [
     {
@@ -26,14 +47,16 @@ export default function Navbar() {
       icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
         <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
-      </svg>
+      </svg>,
+      badge: 0,
     },
     {
       href: "/scan", label: "Scan",
       icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M4 7V4h3M17 4h3v3M4 17v3h3M17 20h3v-3"/>
         <rect x="8" y="8" width="8" height="8"/>
-      </svg>
+      </svg>,
+      badge: 0,
     },
     {
       href: "/customers", label: "Customers",
@@ -41,7 +64,8 @@ export default function Navbar() {
         <circle cx="9" cy="7" r="4"/>
         <path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>
         <path d="M16 3.13a4 4 0 0 1 0 7.75M21 21v-2a4 4 0 0 0-3-3.87"/>
-      </svg>
+      </svg>,
+      badge: pendingCount,
     },
   ];
 
@@ -57,7 +81,7 @@ export default function Navbar() {
             const active = path === l.href;
             return (
               <Link key={l.href} href={l.href} style={{ textDecoration: "none" }}>
-                <div className="flex items-center gap-1.5 px-3 py-2 rounded transition-all"
+                <div className="flex items-center gap-1.5 px-3 py-2 rounded transition-all relative"
                   style={{
                     fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase",
                     color: active ? "var(--text)" : "var(--text-muted)",
@@ -66,6 +90,18 @@ export default function Navbar() {
                   }}>
                   {l.icon}
                   <span className="hidden sm:inline">{l.label}</span>
+                  {l.badge > 0 && (
+                    <div style={{
+                      position: "absolute", top: -4, right: -4,
+                      minWidth: 16, height: 16, borderRadius: 99,
+                      background: "#DC2626", color: "#FFF",
+                      fontSize: 9, fontWeight: 700,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      padding: "0 4px", border: "2px solid var(--surface)",
+                    }}>
+                      {l.badge > 99 ? "99+" : l.badge}
+                    </div>
+                  )}
                 </div>
               </Link>
             );

@@ -1,5 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 
+
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
@@ -25,6 +27,8 @@ export type Customer = {
   expiry_date: string | null;
   access_code: string | null;
   free_coffee: boolean | null;
+  payment_status: string | null;
+  payment_screenshot: string | null;
 };
 
 export type Visit = {

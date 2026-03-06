@@ -14,6 +14,8 @@ export default function Dashboard() {
   const [recentVisits, setRecentVisits]     = useState<VisitWithCustomer[]>([]);
   const [topCustomers, setTopCustomers]     = useState<Customer[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  
+
 
   const fetchData = useCallback(async () => {
     const now = new Date();
@@ -21,10 +23,10 @@ export default function Dashboard() {
     const weekISO  = subDays(now, 7).toISOString();
 
     const [
-      { count: total }, { count: active },
-      { count: today }, { count: week },
-      { data: visits }, { data: top },
-    ] = await Promise.all([
+  { count: total }, { count: active },
+  { count: today }, { count: week },
+  { data: visits }, { data: top },
+] = await Promise.all([
       supabase.from("customers").select("*", { count: "exact", head: true }),
       supabase.from("customers").select("*", { count: "exact", head: true }).eq("is_active", true),
       supabase.from("visits").select("*", { count: "exact", head: true }).gte("visited_at", todayISO),
@@ -36,6 +38,7 @@ export default function Dashboard() {
     setStats({ total: total ?? 0, active: active ?? 0, today: today ?? 0, week: week ?? 0 });
     setRecentVisits((visits as any) ?? []);
     setTopCustomers(top ?? []);
+    
     setLoading(false);
   }, []);
 
@@ -209,6 +212,7 @@ export default function Dashboard() {
             </Link>
           </div>
         </div>
+
       </div>
 
       {selectedCustomer && (

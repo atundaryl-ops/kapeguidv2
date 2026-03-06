@@ -34,6 +34,7 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
   const [redeeming, setRedeeming]         = useState(false);
   const [qrDataUrl, setQrDataUrl]         = useState("");
   const [tab, setTab]                     = useState<"details" | "visits" | "qr">("details");
+  const [showScreenshot, setShowScreenshot] = useState(false);
 
   useEffect(() => {
     supabase.from("visits").select("*").eq("customer_id", customer.id)
@@ -143,6 +144,25 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
       <div className="w-full max-w-lg rounded overflow-hidden animate-slide-up"
         style={{ background: "var(--surface)", border: "1px solid var(--border2)", maxHeight: "90vh", display: "flex", flexDirection: "column" }}>
 
+        {/* Pending Payment Banner */}
+                  {customer.payment_status === "submitted" && (
+                    <div className="px-5 pt-4" style={{ flexShrink: 0 }}>
+                      <div className="rounded p-3 flex items-center justify-between gap-3"
+                        style={{ background: "rgba(180,83,9,0.08)", border: "1px solid rgba(180,83,9,0.25)" }}>
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: "var(--amber)" }} />
+                          <span className="text-xs font-bold" style={{ color: "var(--amber)" }}>Pending Payment Approval</span>
+                        </div>
+                        {customer.payment_screenshot && (
+                          <button className="btn" onClick={() => setShowScreenshot(true)}
+                            style={{ padding: "3px 10px", fontSize: 10, background: "rgba(180,83,9,0.1)", color: "var(--amber)", border: "1px solid rgba(180,83,9,0.3)" }}>
+                            View Proof
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
         {/* Header */}
         <div className="flex items-center justify-between p-5 flex-shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-3">
@@ -153,9 +173,15 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
             <div>
               <h2 style={{ fontSize: 16, fontWeight: 800, color: "var(--text)", lineHeight: 1.2 }}>{displayName}</h2>
               <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                <span className={`badge ${isExpired ? "badge-gray" : customer.is_active ? "badge-green" : "badge-gray"}`}>
-                  {isExpired ? "Inactive" : customer.is_active ? "Active" : "Inactive"}
-                </span>
+                <span className={`badge ${
+                    customer.payment_status === "rejected" ? "badge-red" :
+                    isExpired ? "badge-red" :
+                    customer.is_active ? "badge-green" : "badge-gray"
+                  }`}>
+                    {customer.payment_status === "rejected" ? "Rejected" :
+                    isExpired ? "Expired" :
+                    customer.is_active ? "Active" : "Inactive"}
+                  </span>
                 <span className="badge badge-warm">{customer.visit_count} visits</span>
                 {customer.free_coffee && !isExpired && (
                   <span className="badge badge-amber">☕ Free Coffee</span>
@@ -277,17 +303,21 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
                           : <span className="text-xs" style={{ color: "var(--text-muted)" }}>—</span>}
                       </div>
                       {/* Card issued */}
-                      <div className="flex items-center gap-4 px-4 py-2.5" style={{ borderBottom: "1px solid var(--border)" }}>
-                        <span className="text-xs font-semibold uppercase tracking-wider w-28 flex-shrink-0" style={{ color: "var(--text-muted)" }}>Card Issued</span>
-                        <span className="text-xs font-medium" style={{ color: "var(--text)" }}>{customer.card_issue_date ? format(new Date(customer.card_issue_date), "MMMM d, yyyy") : "—"}</span>
-                      </div>
-                      {/* Expiry */}
-                      <div className="flex items-center gap-4 px-4 py-2.5" style={{ background: "var(--surface2)", borderBottom: "1px solid var(--border)" }}>
-                        <span className="text-xs font-semibold uppercase tracking-wider w-28 flex-shrink-0" style={{ color: "var(--text-muted)" }}>Expiry</span>
-                        <span className="text-xs font-medium" style={{ color: isExpired ? "var(--text-muted)" : "var(--text)" }}>
-                          {customer.expiry_date ? `${format(new Date(customer.expiry_date), "MMMM d, yyyy")}${isExpired ? " · Expired" : ""}` : "—"}
-                        </span>
-                      </div>
+                          {customer.payment_status !== "rejected" && (
+                            <div className="flex items-center gap-4 px-4 py-2.5" style={{ borderBottom: "1px solid var(--border)" }}>
+                              <span className="text-xs font-semibold uppercase tracking-wider w-28 flex-shrink-0" style={{ color: "var(--text-muted)" }}>Card Issued</span>
+                              <span className="text-xs font-medium" style={{ color: "var(--text)" }}>{customer.card_issue_date ? format(new Date(customer.card_issue_date), "MMMM d, yyyy") : "—"}</span>
+                            </div>
+                          )}
+                          {/* Expiry */}
+                          {customer.payment_status !== "rejected" && (
+                            <div className="flex items-center gap-4 px-4 py-2.5" style={{ background: "var(--surface2)", borderBottom: "1px solid var(--border)" }}>
+                              <span className="text-xs font-semibold uppercase tracking-wider w-28 flex-shrink-0" style={{ color: "var(--text-muted)" }}>Expiry</span>
+                              <span className="text-xs font-medium" style={{ color: isExpired ? "var(--text-muted)" : "var(--text)" }}>
+                                {customer.expiry_date ? `${format(new Date(customer.expiry_date), "MMMM d, yyyy")}${isExpired ? " · Expired" : ""}` : "—"}
+                              </span>
+                            </div>
+                          )}
                       {/* Free coffee row */}
                       <div className="flex items-center justify-between px-4 py-2.5"
                         style={{ background: customer.free_coffee ? "rgba(242,201,76,0.04)" : "transparent" }}>
@@ -301,8 +331,7 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
                                 : "✓ Redeemed This Month"}
                             </span>
                         </div>
-                        {customer.free_coffee && !redeemConfirm && !isExpired && (
-                          <button className="btn" style={{ padding: "4px 10px", fontSize: 10, background: "rgba(242,201,76,0.1)", color: "var(--amber)", border: "1px solid rgba(242,201,76,0.3)" }}
+                            {customer.free_coffee && !redeemConfirm && !isExpired && customer.payment_status !== "submitted" && customer.payment_status !== "rejected" && customer.is_active && (                          <button className="btn" style={{ padding: "4px 10px", fontSize: 10, background: "rgba(242,201,76,0.1)", color: "var(--amber)", border: "1px solid rgba(242,201,76,0.3)" }}
                             onClick={() => setRedeemConfirm(true)}>
                             Redeem ☕
                           </button>
@@ -401,37 +430,89 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
                 </>
               ) : (
                 <>
+
+                {customer.payment_status === "submitted" && (
+                   <>
+                  <button className="btn btn-primary flex-1 justify-center"
+                    onClick={async () => {
+                      if (!confirm(`Approve ${displayName}'s membership and activate their account?`)) return;
+                      await supabase.from("customers").update({
+                        is_active:      true,
+                        payment_status: "approved",
+                      }).eq("id", customer.id);
+                      onUpdate();
+                    }}>
+                    ✓ Approve
+                  </button>
+                  <button className="btn btn-danger"
+                    onClick={async () => {
+                      if (!confirm(`Reject ${displayName}'s registration?`)) return;
+                      await supabase.from("customers").update({
+                        payment_status: "rejected",
+                      }).eq("id", customer.id);
+                      onUpdate();
+                    }}>
+                    ✗ Reject
+                  </button>
+                </>
+              )}
                 <button className="btn btn-ghost" onClick={() => setEditing(true)}>
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
       Edit
     </button>
 
-    {isExpired ? (
-      /* Card is expired — show only Renew */
-      <button className="btn btn-primary flex-1 justify-center" onClick={handleRenew}>
-        🔄 Renew Card
-      </button>
-    ) : (
-      /* Card is active — show Deactivate + Extend side by side */
-      <>
-        <button className="btn btn-warm flex-1 justify-center" onClick={toggleActive}>
-          {customer.is_active ? "Deactivate" : "Activate"}
-        </button>
-        {customer.expiry_date && (
-            <button className="btn btn-ghost flex-1 justify-center" onClick={handleExtend}>
-              + Extend 1yr
+    {customer.payment_status !== "submitted" && (
+  <>
+            {isExpired ? (
+              <button className="btn btn-primary flex-1 justify-center" onClick={handleRenew}>
+                🔄 Renew Card
+              </button>
+            ) : (
+              <>
+                <button className="btn btn-warm flex-1 justify-center" onClick={toggleActive}>
+                  {customer.is_active ? "Deactivate" : "Activate"}
+                </button>
+                {customer.expiry_date && (
+                  <button className="btn btn-ghost flex-1 justify-center" onClick={handleExtend}>
+                    + Extend 1yr
+                  </button>
+                )}
+              </>
+            )}
+            <button className="btn btn-danger" onClick={deleteCustomer} title="Delete">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>
             </button>
-)}
-      </>
-    )}
-
-    <button className="btn btn-danger" onClick={deleteCustomer} title="Delete">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>
-    </button>
+          </>
+        )}
             </>
           )}
         </div>
       </div>
+
+          {/* Screenshot Lightbox */}
+{showScreenshot && customer.payment_screenshot && (
+  <div
+    style={{
+      position: "fixed", inset: 0, background: "rgba(0,0,0,0.92)",
+      zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center",
+      padding: 16,
+    }}
+    onClick={() => setShowScreenshot(false)}>
+    <div style={{ position: "relative", maxWidth: 420, width: "100%" }}
+      onClick={(e) => e.stopPropagation()}>
+      <div className="flex items-center justify-between mb-3">
+        <span style={{ color: "#FFF", fontSize: 13, fontWeight: 700 }}>Payment Screenshot</span>
+        <button onClick={() => setShowScreenshot(false)}
+          style={{ background: "rgba(255,255,255,0.1)", border: "none", borderRadius: 6, padding: "4px 10px", color: "#FFF", cursor: "pointer", fontSize: 12 }}>
+          Close ✕
+        </button>
+      </div>
+      <img src={customer.payment_screenshot} alt="Payment proof"
+        style={{ width: "100%", borderRadius: 12, display: "block" }} />
+    </div>
+  </div>
+)}
+      
     </div>
   );
 }

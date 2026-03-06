@@ -8,7 +8,7 @@ import { format } from "date-fns";
 import AddCustomerModal from "@/components/AddCustomerModal";
 import CustomerDetailModal from "@/components/CustomerDetailModal";
 
-type FilterType = "all" | "active" | "inactive";
+type FilterType = "all" | "active" | "inactive" | "pending" | "rejected";
 
 function CustomersContent() {
   const searchParams = useSearchParams();
@@ -32,7 +32,9 @@ function CustomersContent() {
     const q = search.toLowerCase();
     let list = customers;
     if (filter === "active")   list = list.filter((c) => c.is_active);
-    if (filter === "inactive") list = list.filter((c) => !c.is_active);
+    if (filter === "inactive") list = list.filter((c) => !c.is_active && c.payment_status !== "submitted");
+    if (filter === "pending")  list = list.filter((c) => c.payment_status === "submitted");
+    if (filter === "rejected") list = list.filter((c) => c.payment_status === "rejected");
     if (q) list = list.filter((c) =>
       getDisplayName(c).toLowerCase().includes(q) ||
       c.phone.includes(q) ||
@@ -42,10 +44,12 @@ function CustomersContent() {
   }, [search, customers, filter]);
 
   const counts = {
-    all:      customers.length,
-    active:   customers.filter((c) => c.is_active).length,
-    inactive: customers.filter((c) => !c.is_active).length,
-  };
+  all:      customers.length,
+  active:   customers.filter((c) => c.is_active).length,
+  inactive: customers.filter((c) => !c.is_active && c.payment_status !== "submitted").length,
+  pending:  customers.filter((c) => c.payment_status === "submitted").length,
+  rejected: customers.filter((c) => c.payment_status === "rejected").length,
+};
 
   return (
     <div className="min-h-screen" style={{ background: "var(--bg)" }}>
@@ -78,7 +82,7 @@ function CustomersContent() {
 
         {/* Filter tabs */}
         <div className="flex gap-2 mb-6">
-          {(["all", "active", "inactive"] as FilterType[]).map((f) => (
+          {(["all", "active", "inactive", "pending", "rejected"] as FilterType[]).map((f) => (
             <button key={f} onClick={() => setFilter(f)} className="btn"
               style={{
                 padding: "5px 14px", fontSize: 11,
@@ -89,6 +93,17 @@ function CustomersContent() {
               {f === "all"      && `All (${counts.all})`}
               {f === "active"   && `● Active (${counts.active})`}
               {f === "inactive" && `○ Inactive (${counts.inactive})`}
+              {f === "rejected" && `✕ Rejected (${counts.rejected})`}
+              {f === "pending"  && (
+                <span className="flex items-center gap-1.5">
+                  ◎ Pending
+                  {counts.pending > 0 && (
+                    <span style={{ background: "#DC2626", color: "#FFF", borderRadius: 99, fontSize: 9, fontWeight: 700, padding: "1px 5px" }}>
+                      {counts.pending}
+                    </span>
+                  )}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -138,13 +153,21 @@ function CustomersContent() {
                       <td style={{ padding: "12px 14px" }}><span className="text-xs" style={{ color: "var(--text-muted)" }}>{c.last_visit ? format(new Date(c.last_visit), "MMM d, yyyy") : "Never"}</span></td>
                       <td style={{ padding: "12px 14px" }}>
                           {(() => {
-                            const expired = c.expiry_date && new Date(c.expiry_date) < new Date();
-                            return (
-                              <span className={`badge ${expired ? "badge-red" : c.is_active ? "badge-green" : "badge-gray"}`}>
-                                {expired ? "Expired" : c.is_active ? "Active" : "Inactive"}
-                              </span>
-                            );
-                          })()}                      </td>
+                              const expired = c.expiry_date && new Date(c.expiry_date) < new Date();
+                              return (
+                                <span className={`badge ${
+                                  c.payment_status === "rejected" ? "badge-red" :
+                                  c.payment_status === "submitted" ? "badge-amber" :
+                                  expired ? "badge-red" :
+                                  c.is_active ? "badge-green" : "badge-gray"
+                                }`}>
+                                  {c.payment_status === "rejected" ? "Rejected" :
+                                  c.payment_status === "submitted" ? "Pending" :
+                                  expired ? "Expired" :
+                                  c.is_active ? "Active" : "Inactive"}
+                                </span>
+                              );
+                            })()}                    </td>
                       <td style={{ padding: "12px 14px" }}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: "var(--text-faint)" }}><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                       </td>
@@ -170,8 +193,18 @@ function CustomersContent() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <span className={`badge ${c.is_active ? "badge-green" : "badge-gray"}`}>{c.is_active ? "Active" : "Inactive"}</span>
-                      <div className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{c.visit_count} visits</div>
+                        <span className={`badge ${
+                          c.payment_status === "rejected" ? "badge-red" :
+                          c.payment_status === "submitted" ? "badge-amber" :
+                          c.expiry_date && new Date(c.expiry_date) < new Date() ? "badge-red" :
+                          c.is_active ? "badge-green" : "badge-gray"
+                        }`}>
+                          {c.payment_status === "rejected" ? "Rejected" :
+                          c.payment_status === "submitted" ? "Pending" :
+                          c.expiry_date && new Date(c.expiry_date) < new Date() ? "Expired" :
+                          c.is_active ? "Active" : "Inactive"}
+                        </span>                     
+                        <div className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{c.visit_count} visits</div>
                     </div>
                   </div>
                 </div>
