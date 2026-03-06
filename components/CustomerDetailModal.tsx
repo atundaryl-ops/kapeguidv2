@@ -475,7 +475,7 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
                 <button className="btn btn-warm flex-1 justify-center" onClick={toggleActive}>
                   {customer.is_active ? "Deactivate" : "Activate"}
                 </button>
-               {customer.expiry_date && customer.payment_status !== "rejected" && (
+               {customer.expiry_date && customer.payment_status !== "rejected" && customer.is_active &&(
                   <button className="btn btn-ghost flex-1 justify-center" onClick={handleExtend}>
                     + Extend 1yr
                   </button>
