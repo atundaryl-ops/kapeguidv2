@@ -27,6 +27,7 @@ export default function RegisterPage() {
   const [form, setForm] = useState({
     first_name: "", middle_name: "", last_name: "",
     phone: "", email: "",
+    birthdate: "", gender: "", gender_other: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -79,6 +80,8 @@ export default function RegisterPage() {
       is_active:       false,
       visit_count:     0,
       payment_status:  "submitted",
+      birthdate:       form.birthdate || null,
+        gender:          form.gender === "Others" ? form.gender_other : form.gender || null,
     }).select().single();
 
     if (error) {
@@ -274,11 +277,11 @@ export default function RegisterPage() {
 
         <div style={{ textAlign: "center", marginBottom: 28 }}>
           <img src="/images/logo.jpg" alt="KapeGuid" style={{ width: 80, height: 80, objectFit: "contain", borderRadius: 12, margin: "0 auto 14px" }} />
-          <h1 style={{ fontSize: 26, fontWeight: 800, color: "#0A0A0A", letterSpacing: "-0.02em" }}>
-            Join KapeGuid
-          </h1>
+        <h1 style={{ fontSize: 26, fontWeight: 800, color: "#0A0A0A", letterSpacing: "-0.02em" }}>
+        Join <span style={{ color: "#3B1F00" }}>kapéople.</span>
+        </h1>
           <p style={{ fontSize: 13, color: "#666", marginTop: 6 }}>
-            Register as a member and earn free coffee every month!
+            Register as a member and get free coffee every month!
           </p>
           
         </div>
@@ -346,10 +349,26 @@ export default function RegisterPage() {
               placeholder="juan@email.com" value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })} />
             {errors.email && <p style={{ fontSize: 10, color: "#DC2626", marginTop: 3 }}>{errors.email}</p>}
-          </div>
         </div>
+</div>
 
-        <button onClick={handleSubmit}
+            {/* Personal Info */}
+            <div style={{ background: "#FFF", borderRadius: 12, border: "1px solid #E5E5E5", padding: 20, marginBottom: 16 }}>
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#888", marginBottom: 14 }}>Personal Info</p>
+
+            {/* Birthdate */}
+            <div style={{ marginBottom: 14 }}>
+                <label style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "#888", display: "block", marginBottom: 4 }}>Birthdate</label>
+                <input type="date"
+                style={{ width: "100%", padding: "9px 11px", borderRadius: 6, border: "1px solid #DDD", fontSize: 13, fontFamily: "Poppins, sans-serif", outline: "none" }}
+                value={form.birthdate}
+                onChange={(e) => setForm({ ...form, birthdate: e.target.value })} />
+            </div>
+
+            {/* Gender */}
+            </div>
+
+            <button onClick={handleSubmit}
           style={{
             width: "100%", padding: "14px", borderRadius: 8,
             background: "#0A0A0A", color: "#FFF", border: "none",

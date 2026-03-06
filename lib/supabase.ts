@@ -29,6 +29,8 @@ export type Customer = {
   free_coffee: boolean | null;
   payment_status: string | null;
   payment_screenshot: string | null;
+  birthdate: string | null;
+  gender: string | null;
 };
 
 export type Visit = {
