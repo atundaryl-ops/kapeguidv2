@@ -35,10 +35,24 @@ export default function ScanPage() {
 
     // Record visit
     // Block if card is expired
-    const isExpired = data.expiry_date && new Date(data.expiry_date) < new Date();
-    if (isExpired) {
+const isExpired = data.expiry_date && new Date(data.expiry_date) < new Date();
+if (isExpired) {
+  setState("unknown");
+  setErrorMsg(`${data.first_name ?? data.name}'s card expired on ${new Date(data.expiry_date).toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" })}. Please renew their membership.`);
+  return;
+}
+
+// Block if inactive
+    if (!data.is_active) {
       setState("unknown");
-      setErrorMsg(`${data.first_name ?? data.name}'s card expired on ${new Date(data.expiry_date).toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" })}. Please renew their membership.`);
+      setErrorMsg(`${data.first_name ?? data.name}'s account is currently inactive. Please contact staff to reactivate.`);
+      return;
+    }
+
+    // Block if pending or rejected
+    if (data.payment_status === "submitted" || data.payment_status === "rejected") {
+      setState("unknown");
+      setErrorMsg(`${data.first_name ?? data.name}'s account is not yet activated. Please complete the registration process.`);
       return;
     }
 

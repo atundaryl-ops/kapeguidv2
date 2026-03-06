@@ -154,7 +154,7 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
   const tabs = [
     { key: "details", label: "Details" },
     { key: "visits",  label: `Visits (${customer.visit_count})` },
-    { key: "qr",      label: "QR Code" },
+    { key: "qr",      label: "QR Code" , disabled: !customer.is_active || isExpired},
   ] as const;
 
   return (
@@ -201,7 +201,7 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
                     customer.is_active ? "Active" : "Inactive"}
                   </span>
                 <span className="badge badge-warm">{customer.visit_count} visits</span>
-                {customer.free_coffee && !isExpired && customer.payment_status !== "submitted" && customer.payment_status !== "rejected" && (
+                {customer.free_coffee && !isExpired && customer.is_active && customer.payment_status !== "submitted" && customer.payment_status !== "rejected" && (
                   <span className="badge badge-amber">☕ Free Coffee</span>
                 )}
                 
@@ -217,17 +217,20 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
         {/* Tabs */}
         <div className="flex flex-shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           {tabs.map((t) => (
-            <button key={t.key} onClick={() => setTab(t.key)}
-              style={{
-                padding: "10px 20px", fontSize: 11, fontWeight: 600,
-                letterSpacing: "0.06em", textTransform: "uppercase",
-                color: tab === t.key ? "var(--text)" : "var(--text-muted)",
-                background: "none", border: "none", cursor: "pointer",
-                borderBottom: tab === t.key ? "2px solid var(--warm)" : "2px solid transparent",
-                marginBottom: -1, transition: "all 0.15s",
-              }}>
-              {t.label}
-            </button>
+            <button key={t.key}
+                  onClick={() => !("disabled" in t && t.disabled) && setTab(t.key)}
+                  style={{
+                    padding: "10px 20px", fontSize: 11, fontWeight: 600,
+                    letterSpacing: "0.06em", textTransform: "uppercase",
+                    color: "disabled" in t && t.disabled ? "var(--text-faint)" : tab === t.key ? "var(--text)" : "var(--text-muted)",
+                    background: "none", border: "none",
+                    cursor: "disabled" in t && t.disabled ? "not-allowed" : "pointer",
+                    borderBottom: tab === t.key ? "2px solid var(--warm)" : "2px solid transparent",
+                    marginBottom: -1, transition: "all 0.15s",
+                    opacity: "disabled" in t && t.disabled ? 0.4 : 1,
+                  }}>
+                  {t.label}
+                </button>
           ))}
         </div>
 
@@ -341,15 +344,17 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
                         <div className="flex items-center gap-4">
                           <span className="text-xs font-semibold uppercase tracking-wider w-28 flex-shrink-0" style={{ color: "var(--text-muted)" }}>Free Coffee</span>
                           <span className={`badge ${customer.free_coffee && !isExpired ? "badge-amber" : "badge-gray"}`}>
-                          {customer.payment_status === "submitted"
-                          ? "Eligible once approved"
-                          : customer.payment_status === "rejected"
-                          ? "Not Eligible"
-                          : isExpired
-                          ? "Not Eligible"
-                          : customer.free_coffee
-                          ? "☕ Entitled"
-                          : "✓ Redeemed This Month"}
+                            {customer.payment_status === "submitted"
+                            ? "Eligible once approved"
+                            : customer.payment_status === "rejected"
+                            ? "Not Eligible"
+                            : isExpired
+                            ? "Not Eligible"
+                            : !customer.is_active
+                            ? "Not Eligible"
+                            : customer.free_coffee
+                            ? "☕ Entitled"   
+                            : "✓ Redeemed This Month"}
                             </span>
                         </div>
                             {customer.free_coffee && !redeemConfirm && !isExpired && customer.payment_status !== "submitted" && customer.payment_status !== "rejected" && customer.is_active && (                          <button className="btn" style={{ padding: "4px 10px", fontSize: 10, background: "rgba(242,201,76,0.1)", color: "var(--amber)", border: "1px solid rgba(242,201,76,0.3)" }}
