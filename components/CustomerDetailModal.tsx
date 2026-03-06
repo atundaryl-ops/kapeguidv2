@@ -443,6 +443,20 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
                         is_active:      true,
                         payment_status: "approved",
                       }).eq("id", customer.id);
+
+                      // Send approval email if customer has email
+                      if (customer.email) {
+                        await fetch("/api/send-approval-email", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            email:     customer.email,
+                            firstName: customer.first_name ?? customer.name,
+                            lastName:  customer.last_name ?? "",
+                          }),
+                        });
+                      }
+
                       onUpdate();
                     }}>
                     ✓ Approve
