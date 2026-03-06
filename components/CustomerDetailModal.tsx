@@ -183,7 +183,7 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
                     customer.is_active ? "Active" : "Inactive"}
                   </span>
                 <span className="badge badge-warm">{customer.visit_count} visits</span>
-                {customer.free_coffee && !isExpired && (
+                {customer.free_coffee && !isExpired && customer.payment_status !== "submitted" && customer.payment_status !== "rejected" && (
                   <span className="badge badge-amber">☕ Free Coffee</span>
                 )}
                 
@@ -278,8 +278,7 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
                         { label: "Last Name",    value: customer.last_name ?? "—" },
                         { label: "Phone",        value: customer.phone },
                         { label: "Email",        value: customer.email ?? "—" },
-                        { label: "Member Since", value: format(new Date(customer.created_at), "MMMM d, yyyy") },
-                        { label: "Last Visit",   value: customer.last_visit ? format(new Date(customer.last_visit), "MMM d, yyyy · h:mm a") : "Never" },
+                        { label: "Member Since", value: customer.payment_status === "submitted" || customer.payment_status === "rejected" ? "—" : format(new Date(customer.created_at), "MMMM d, yyyy") },                        { label: "Last Visit",   value: customer.last_visit ? format(new Date(customer.last_visit), "MMM d, yyyy · h:mm a") : "Never" },
                         { label: "Notes",        value: customer.notes ?? "—" },
                       ].map((row, i, arr) => (
                         <div key={row.label} className="flex gap-4 px-4 py-2.5"
@@ -303,14 +302,14 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
                           : <span className="text-xs" style={{ color: "var(--text-muted)" }}>—</span>}
                       </div>
                       {/* Card issued */}
-                          {customer.payment_status !== "rejected" && (
-                            <div className="flex items-center gap-4 px-4 py-2.5" style={{ borderBottom: "1px solid var(--border)" }}>
-                              <span className="text-xs font-semibold uppercase tracking-wider w-28 flex-shrink-0" style={{ color: "var(--text-muted)" }}>Card Issued</span>
-                              <span className="text-xs font-medium" style={{ color: "var(--text)" }}>{customer.card_issue_date ? format(new Date(customer.card_issue_date), "MMMM d, yyyy") : "—"}</span>
+                          {customer.payment_status !== "rejected" && customer.payment_status !== "submitted" && (
+                          <div className="flex items-center gap-4 px-4 py-2.5" style={{ borderBottom: "1px solid var(--border)" }}>
+                           <span className="text-xs font-semibold uppercase tracking-wider w-28 flex-shrink-0" style={{ color: "var(--text-muted)" }}>Card Issued</span>
+                          <span className="text-xs font-medium" style={{ color: "var(--text)" }}>{customer.card_issue_date ? format(new Date(customer.card_issue_date), "MMMM d, yyyy") : "—"}</span>
                             </div>
                           )}
                           {/* Expiry */}
-                          {customer.payment_status !== "rejected" && (
+                          {customer.payment_status !== "rejected" && customer.payment_status !== "submitted" && (
                             <div className="flex items-center gap-4 px-4 py-2.5" style={{ background: "var(--surface2)", borderBottom: "1px solid var(--border)" }}>
                               <span className="text-xs font-semibold uppercase tracking-wider w-28 flex-shrink-0" style={{ color: "var(--text-muted)" }}>Expiry</span>
                               <span className="text-xs font-medium" style={{ color: isExpired ? "var(--text-muted)" : "var(--text)" }}>
@@ -324,11 +323,15 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
                         <div className="flex items-center gap-4">
                           <span className="text-xs font-semibold uppercase tracking-wider w-28 flex-shrink-0" style={{ color: "var(--text-muted)" }}>Free Coffee</span>
                           <span className={`badge ${customer.free_coffee && !isExpired ? "badge-amber" : "badge-gray"}`}>
-                              {isExpired
-                                ? "Not Eligible"
-                                : customer.free_coffee
-                                ? "☕ Entitled"
-                                : "✓ Redeemed This Month"}
+                          {customer.payment_status === "submitted"
+                          ? "Eligible once approved"
+                          : customer.payment_status === "rejected"
+                          ? "Not Eligible"
+                          : isExpired
+                          ? "Not Eligible"
+                          : customer.free_coffee
+                          ? "☕ Entitled"
+                          : "✓ Redeemed This Month"}
                             </span>
                         </div>
                             {customer.free_coffee && !redeemConfirm && !isExpired && customer.payment_status !== "submitted" && customer.payment_status !== "rejected" && customer.is_active && (                          <button className="btn" style={{ padding: "4px 10px", fontSize: 10, background: "rgba(242,201,76,0.1)", color: "var(--amber)", border: "1px solid rgba(242,201,76,0.3)" }}
@@ -472,7 +475,7 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
                 <button className="btn btn-warm flex-1 justify-center" onClick={toggleActive}>
                   {customer.is_active ? "Deactivate" : "Activate"}
                 </button>
-                {customer.expiry_date && (
+               {customer.expiry_date && customer.payment_status !== "rejected" && (
                   <button className="btn btn-ghost flex-1 justify-center" onClick={handleExtend}>
                     + Extend 1yr
                   </button>
