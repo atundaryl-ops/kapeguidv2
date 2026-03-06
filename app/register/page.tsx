@@ -175,34 +175,27 @@ export default function RegisterPage() {
               Complete Payment
             </h1>
             <p style={{ fontSize: 13, color: "#666", marginTop: 6 }}>
-              Pay <strong style={{ color: "#0A0A0A" }}>₱500</strong> via GCash to activate your membership
+              Pay <strong style={{ color: "#0A0A0A" }}>₱500</strong> via QR to activate your membership
             </p>
           </div>
 
-          {/* GCash details */}
-          <div style={{ background: "#FFF", border: "1px solid #E5E5E5", borderRadius: 12, padding: 20, marginBottom: 16 }}>
-            <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#888", marginBottom: 14 }}>
-              GCash Payment Details
+          {/* GCash QR */}
+            <div style={{ background: "#FFF", border: "1px solid #E5E5E5", borderRadius: 12, padding: 20, marginBottom: 16, textAlign: "center" }}>
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#888", marginBottom: 4 }}>
+                Scan to Pay via QR
             </p>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #F0F0F0" }}>
-              <span style={{ fontSize: 13, color: "#666" }}>Amount</span>
-              <span style={{ fontSize: 20, fontWeight: 800, color: "#0A0A0A" }}>₱500.00</span>
+            <p style={{ fontSize: 20, fontWeight: 800, color: "#0A0A0A", marginBottom: 14 }}>₱500.00</p>
+            <img src="/images/gcash-qr.png" alt="Payment QR Code"
+                style={{ width: 220, height: 220, objectFit: "contain", borderRadius: 8, margin: "0 auto", display: "block" }} />
+            <p style={{ fontSize: 12, color: "#888", marginTop: 12 }}>
+                Scan QR → Enter <strong style={{ color: "#0A0A0A" }}>₱500</strong> → Pay
+            </p>
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #F0F0F0" }}>
-              <span style={{ fontSize: 13, color: "#666" }}>GCash Number</span>
-              <span style={{ fontSize: 14, fontWeight: 700, color: "#0A0A0A", letterSpacing: "0.04em" }}>0948 225 5802</span>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0" }}>
-              <span style={{ fontSize: 13, color: "#666" }}>Account Name</span>
-              <span style={{ fontSize: 14, fontWeight: 700, color: "#0A0A0A" }}>Kapeguid</span>
-            </div>
-          </div>
-
           {/* Instructions */}
           <div style={{ background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 12, padding: 14, marginBottom: 20 }}>
             <p style={{ fontSize: 12, color: "#166534", lineHeight: 1.7 }}>
-              1. Open your <strong>GCash app</strong><br/>
-              2. Send <strong>₱500</strong> to <strong>0948 225 5802</strong><br/>
+              1. Open your <strong>PREFERRED APPLICATION</strong><br/>
+              2. SCAN THE <strong>QR CODE</strong><br/>
               3. Take a <strong>screenshot</strong> of the confirmation<br/>
               4. Upload the screenshot below
             </p>
@@ -366,6 +359,26 @@ export default function RegisterPage() {
             </div>
 
             {/* Gender */}
+                <div>
+                <label style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "#888", display: "block", marginBottom: 4 }}>Gender</label>
+                <select
+                    style={{ width: "100%", padding: "9px 11px", borderRadius: 6, border: "1px solid #DDD", fontSize: 13, fontFamily: "Poppins, sans-serif", outline: "none", background: "#FFF", color: form.gender ? "#0A0A0A" : "#AAA" }}
+                    value={form.gender}
+                    onChange={(e) => setForm({ ...form, gender: e.target.value, gender_other: "" })}>
+                    <option value="" disabled>Select gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Prefer not to say">Prefer not to say</option>
+                    <option value="Others">Others</option>
+                </select>
+                {form.gender === "Others" && (
+                    <input
+                    style={{ width: "100%", padding: "9px 11px", borderRadius: 6, border: "1px solid #DDD", fontSize: 13, fontFamily: "Poppins, sans-serif", outline: "none", marginTop: 8 }}
+                    placeholder="Please specify your gender"
+                    value={form.gender_other}
+                    onChange={(e) => setForm({ ...form, gender_other: e.target.value })} />
+                )}
+                </div>
             </div>
 
             <button onClick={handleSubmit}
