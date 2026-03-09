@@ -31,7 +31,6 @@ export default function AddCustomerModal({ onClose, onSuccess }: Props) {
   const [newCustomer, setNewCustomer] = useState<Customer | null>(null);
   const [qrDataUrl, setQrDataUrl]     = useState("");
   const [tempPassword, setTempPassword] = useState("");
-  
   function handleIssueDateChange(val: string) {
     setForm({ ...form, card_issue_date: val, expiry_date: addOneYear(val) });
   }

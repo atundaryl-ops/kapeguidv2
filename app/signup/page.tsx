@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 function generateQRString(firstName: string, lastName: string): string {
   const slug = `${firstName}-${lastName}`.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
-  const ts   = Date.now().toString(36);
+  const ts = Date.now().toString(36);
   const rand = Math.random().toString(36).slice(2, 6);
   return `kapeguid-${slug}-${ts}${rand}`;
 }
@@ -19,14 +19,14 @@ function addOneYear(dateStr: string): string {
 type Step = "details" | "account" | "verify" | "payment" | "success";
 
 export default function SignupPage() {
-  const [step, setStep]               = useState<Step>("details");
-  const [uploading, setUploading]     = useState(false);
+  const [step, setStep] = useState<Step>("details");
+  const [uploading, setUploading] = useState(false);
   const [serverError, setServerError] = useState("");
   const [registeredName, setRegisteredName] = useState("");
-  const [screenshot, setScreenshot]   = useState<File | null>(null);
+  const [screenshot, setScreenshot] = useState<File | null>(null);
   const [screenshotPreview, setScreenshotPreview] = useState("");
-  const [verifyCode, setVerifyCode]   = useState("");
-  const [authUserId, setAuthUserId]   = useState("");
+  const [verifyCode, setVerifyCode] = useState("");
+  const [authUserId, setAuthUserId] = useState("");
 
   const [form, setForm] = useState({
     first_name: "", middle_name: "", last_name: "",
@@ -43,8 +43,8 @@ export default function SignupPage() {
   function validateDetails() {
     const e: Record<string, string> = {};
     if (!form.first_name.trim()) e.first_name = "First name is required";
-    if (!form.last_name.trim())  e.last_name  = "Last name is required";
-    if (!form.phone.trim())      e.phone      = "Phone number is required";
+    if (!form.last_name.trim()) e.last_name = "Last name is required";
+    if (!form.phone.trim()) e.phone = "Phone number is required";
     else if (!/^9[0-9]{9}$/.test(form.phone.trim())) e.phone = "Must start with 9 and be 10 digits";
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -66,20 +66,20 @@ export default function SignupPage() {
     setUploading(true);
     setServerError("");
 
-    const { data, error } = await supabase.auth.signUp({
-      email: form.email.trim(),
-      password: form.password,
+    // Send OTP via Resend
+    const res = await fetch("/api/send-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: form.email.trim() }),
     });
 
-    if (error) {
-      setServerError(error.message.includes("already registered")
-        ? "This email is already registered. Please log in instead."
-        : "Something went wrong. Please try again.");
+    const result = await res.json();
+    if (!res.ok) {
+      setServerError(result.error ?? "Failed to send verification email.");
       setUploading(false);
       return;
     }
 
-    setAuthUserId(data.user?.id ?? "");
     setStep("verify");
     setUploading(false);
   }
@@ -88,18 +88,38 @@ export default function SignupPage() {
     setUploading(true);
     setServerError("");
 
-    const { error } = await supabase.auth.verifyOtp({
-      email: form.email.trim(),
-      token: verifyCode.trim(),
-      type: "signup",
+    // Verify OTP
+    const res = await fetch("/api/verify-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: form.email.trim(), code: verifyCode.trim() }),
     });
 
-    if (error) {
-      setServerError("Invalid or expired code. Please check your email and try again.");
+    const result = await res.json();
+    if (!res.ok) {
+      setServerError(result.error ?? "Invalid code. Please try again.");
       setUploading(false);
       return;
     }
 
+    // Create Supabase auth account after OTP verified
+    const { data, error } = await supabase.auth.signUp({
+      email: form.email.trim(),
+      password: form.password,
+      options: { emailRedirectTo: undefined },
+    });
+
+    if (error) {
+      setServerError(
+        error.message.includes("already registered")
+          ? "This email is already registered. Please log in instead."
+          : "Something went wrong. Please try again."
+      );
+      setUploading(false);
+      return;
+    }
+
+    setAuthUserId(data.user?.id ?? "");
     setStep("payment");
     setUploading(false);
   }
@@ -116,29 +136,29 @@ export default function SignupPage() {
     setUploading(true);
     setServerError("");
 
-    const today       = new Date().toISOString().slice(0, 10);
-    const expiry      = addOneYear(today);
-    const qr_code     = generateQRString(form.first_name, form.last_name);
-    const fullName    = `${form.first_name} ${form.middle_name ? form.middle_name + " " : ""}${form.last_name}`.trim();
+    const today = new Date().toISOString().slice(0, 10);
+    const expiry = addOneYear(today);
+    const qr_code = generateQRString(form.first_name, form.last_name);
+    const fullName = `${form.first_name} ${form.middle_name ? form.middle_name + " " : ""}${form.last_name}`.trim();
     const displayName = `${form.first_name}${form.middle_name ? " " + form.middle_name.charAt(0).toUpperCase() + "." : ""} ${form.last_name}`.trim();
 
     const { data, error } = await supabase.from("customers").insert({
-      name:            fullName,
-      first_name:      form.first_name.trim(),
-      middle_name:     form.middle_name.trim() || null,
-      last_name:       form.last_name.trim(),
-      phone:           `+63${form.phone.trim()}`,
-      email:           form.email.trim(),
+      name: fullName,
+      first_name: form.first_name.trim(),
+      middle_name: form.middle_name.trim() || null,
+      last_name: form.last_name.trim(),
+      phone: `+63${form.phone.trim()}`,
+      email: form.email.trim(),
       qr_code,
       card_issue_date: today,
-      expiry_date:     expiry,
-      free_coffee:     true,
-      is_active:       false,
-      visit_count:     0,
-      payment_status:  "submitted",
-      birthdate:       form.birthdate || null,
-      gender:          form.gender === "Others" ? form.gender_other : form.gender || null,
-      auth_id:         authUserId || null,
+      expiry_date: expiry,
+      free_coffee: true,
+      is_active: false,
+      visit_count: 0,
+      payment_status: "submitted",
+      birthdate: form.birthdate || null,
+      gender: form.gender === "Others" ? form.gender_other : form.gender || null,
+      auth_id: authUserId || null,
     }).select().single();
 
     if (error) {
@@ -151,7 +171,7 @@ export default function SignupPage() {
       return;
     }
 
-    const ext      = screenshot.name.split(".").pop();
+    const ext = screenshot.name.split(".").pop();
     const filePath = `payment-proofs/${data.id}.${ext}`;
 
     const { error: uploadError } = await supabase.storage
@@ -179,7 +199,7 @@ export default function SignupPage() {
       <main style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px", background: "#FAFAFA", fontFamily: "Poppins, sans-serif" }}>
         <div style={{ width: "100%", maxWidth: 400, textAlign: "center" }}>
           <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#F0FDF4", border: "2px solid #86EFAC", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5"><path d="M20 6L9 17l-5-5" /></svg>
           </div>
           <h1 style={{ fontSize: 24, fontWeight: 800, color: "#0A0A0A", letterSpacing: "-0.02em" }}>Payment Submitted!</h1>
           <p style={{ fontSize: 13, color: "#666", marginTop: 8, lineHeight: 1.6 }}>
@@ -283,7 +303,7 @@ export default function SignupPage() {
               ) : (
                 <>
                   <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#AAA" strokeWidth="1.5" style={{ margin: "0 auto 8px" }}>
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" />
                   </svg>
                   <p style={{ fontSize: 13, color: "#888", fontWeight: 600 }}>Tap to upload screenshot</p>
                   <p style={{ fontSize: 11, color: "#AAA", marginTop: 4 }}>JPG, PNG accepted</p>
