@@ -30,7 +30,8 @@ export default function AddCustomerModal({ onClose, onSuccess }: Props) {
   const [serverError, setServerError] = useState("");
   const [newCustomer, setNewCustomer] = useState<Customer | null>(null);
   const [qrDataUrl, setQrDataUrl]     = useState("");
-
+  const [tempPassword, setTempPassword] = useState("");
+  
   function handleIssueDateChange(val: string) {
     setForm({ ...form, card_issue_date: val, expiry_date: addOneYear(val) });
   }
@@ -68,13 +69,25 @@ export default function AddCustomerModal({ onClose, onSuccess }: Props) {
       expiry_date:     form.expiry_date || null,
       free_coffee:     form.free_coffee,
       qr_code,
-      is_active: true,
+      is_active: new Date(form.expiry_date) > new Date(),
     }).select().single();
 
     if (error) {
       setServerError(error.message.includes("unique") ? "This phone number is already registered." : error.message);
       setLoading(false);
       return;
+    }
+    // Create auth account if email provided
+    if (form.email.trim()) {
+      const res = await fetch("/api/create-customer-auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: form.email.trim(), customerId: data.id }),
+      });
+      const authResult = await res.json();
+      if (authResult.tempPassword) {
+        setTempPassword(authResult.tempPassword);
+      }
     }
 
     const QRCode = await import("qrcode");
@@ -116,6 +129,13 @@ export default function AddCustomerModal({ onClose, onSuccess }: Props) {
           </div>
           <div className="p-5">
             <p className="text-xs mb-4 text-center font-medium" style={{ color: "var(--text-muted)" }}>QR code ready — download now.</p>
+            {tempPassword && (
+              <div style={{ background: "#F0FDF4", border: "1px solid #86EFAC", borderRadius: 8, padding: "12px 16px", marginBottom: 16, textAlign: "center" }}>
+                <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#166534", marginBottom: 4 }}>Temporary Password</p>
+                <p style={{ fontSize: 16, fontWeight: 800, color: "#0A0A0A", letterSpacing: "0.05em" }}>{tempPassword}</p>
+                <p style={{ fontSize: 11, color: "#888", marginTop: 4 }}>Share this with the customer — they can change it after logging in.</p>
+              </div>
+            )}
             <div className="flex justify-center mb-4">
               <div className="rounded overflow-hidden" style={{ background: "#FFF", padding: 16, border: "1px solid var(--border2)" }}>
                 {qrDataUrl

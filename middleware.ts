@@ -26,7 +26,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Protected staff routes
-  const staffRoutes = ["/dashboard", "/customers", "/scan", "/checkins", "/staff"];
+  const staffRoutes = ["/dashboard", "/customers", "/scan", "/checkins", "/staff", "/settings"];
 
   const isStaffRoute = staffRoutes.some((route) => pathname.startsWith(route));
 

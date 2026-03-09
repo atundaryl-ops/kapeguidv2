@@ -58,25 +58,25 @@ export default function Navbar() {
     {
       href: "/dashboard", label: "Dashboard",
       icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
-        <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+        <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" />
+        <rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
       </svg>,
       badge: 0,
     },
     {
       href: "/scan", label: "Scan",
       icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M4 7V4h3M17 4h3v3M4 17v3h3M17 20h3v-3"/>
-        <rect x="8" y="8" width="8" height="8"/>
+        <path d="M4 7V4h3M17 4h3v3M4 17v3h3M17 20h3v-3" />
+        <rect x="8" y="8" width="8" height="8" />
       </svg>,
       badge: 0,
     },
     {
       href: "/customers", label: "Customers",
       icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <circle cx="9" cy="7" r="4"/>
-        <path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>
-        <path d="M16 3.13a4 4 0 0 1 0 7.75M21 21v-2a4 4 0 0 0-3-3.87"/>
+        <circle cx="9" cy="7" r="4" />
+        <path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75M21 21v-2a4 4 0 0 0-3-3.87" />
       </svg>,
       badge: pendingCount,
     },
@@ -119,7 +119,9 @@ export default function Navbar() {
               </Link>
             );
           })}
-
+           <Link href="/settings" style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--text-muted)", textDecoration: "none", padding: "6px 12px" }}>
+            Settings
+          </Link>
           {/* Sign Out */}
           <button onClick={handleLogout}
             style={{
@@ -129,6 +131,7 @@ export default function Navbar() {
             }}>
             Sign Out
           </button>
+         
         </div>
       </div>
     </nav>
