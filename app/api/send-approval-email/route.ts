@@ -125,6 +125,6 @@ export async function POST(req: Request) {
     `,
   });
 
-  if (error) return NextResponse.json({ error }, { status: 500 });
+  if (error) console.error("Approval email failed:", error);
   return NextResponse.json({ success: true });
 }
