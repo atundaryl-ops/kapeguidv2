@@ -1,15 +1,22 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
+import { createClient } from "@supabase/supabase-js";
 
 const resend = new Resend(process.env.RESEND_API_KEY ?? "");
-import { otpStore } from "@/lib/otpStore";
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 export async function POST(req: Request) {
   const { email } = await req.json();
   if (!email) return NextResponse.json({ error: "Email required" }, { status: 400 });
 
   const code = Math.floor(100000 + Math.random() * 900000).toString();
-  otpStore[email] = { code, expires: Date.now() + 10 * 60 * 1000 };
+  const expires_at = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+
+  // Store in database
+  await supabase.from("otp_codes").upsert({ email, code, expires_at });
 
   const { error } = await resend.emails.send({
     from: "KapeGuid <onboarding@resend.dev>",
