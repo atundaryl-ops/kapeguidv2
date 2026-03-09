@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import { useRouter } from "next/navigation";
-
+import { supabaseBrowser as supabase } from "@/lib/supabase";
 
 export default function SettingsPage() {
   const [newPassword, setNewPassword]         = useState("");
@@ -11,11 +11,6 @@ export default function SettingsPage() {
   const [successMsg, setSuccessMsg]           = useState("");
   const [errorMsg, setErrorMsg]               = useState("");
   const router = useRouter();
-
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
 
   async function handleChangePassword() {
     setSuccessMsg("");

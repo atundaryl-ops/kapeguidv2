@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import { useRouter } from "next/navigation";
+import { supabaseBrowser as supabase } from "@/lib/supabase";
 
 function generateQRString(firstName: string, lastName: string): string {
   const slug = `${firstName}-${lastName}`.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
@@ -18,10 +19,7 @@ function addOneYear(dateStr: string): string {
 
 type Step = "details" | "account" | "verify" | "payment" | "success";
 
-const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+
 export default function SignupPage() {
   const [step, setStep] = useState<Step>("details");
   const [uploading, setUploading] = useState(false);

@@ -24,6 +24,8 @@ export default function Navbar() {
   const path = usePathname();
   const router = useRouter();
   const [pendingCount, setPendingCount] = useState(0);
+  const [staffInfo, setStaffInfo] = useState<{ full_name: string; role: string } | null>(null);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   const supabaseClient = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -46,6 +48,14 @@ export default function Navbar() {
     }
 
     fetchPending();
+
+    async function fetchStaffInfo() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase.from("staff").select("full_name, role").eq("id", user.id).single();
+      if (data) setStaffInfo(data);
+    }
+    fetchStaffInfo();
 
     const ch = supabase.channel("navbar-pending")
       .on("postgres_changes", { event: "*", schema: "public", table: "customers" }, fetchPending)
@@ -119,19 +129,54 @@ export default function Navbar() {
               </Link>
             );
           })}
-           <Link href="/settings" style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--text-muted)", textDecoration: "none", padding: "6px 12px" }}>
-            Settings
-          </Link>
-          {/* Sign Out */}
-          <button onClick={handleLogout}
-            style={{
-              fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase",
-              color: "var(--text-muted)", background: "transparent", border: "1px solid transparent",
-              borderRadius: 6, padding: "6px 12px", cursor: "pointer", fontFamily: "Poppins, sans-serif",
-            }}>
-            Sign Out
-          </button>
-         
+
+          {staffInfo && (
+            <div style={{ position: "relative" }}>
+              {/* Avatar button */}
+              <div onClick={() => setProfileOpen(!profileOpen)}
+                style={{
+                  width: 32, height: 32, borderRadius: "50%", background: "var(--warm)",
+                  display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
+                  border: "1px solid var(--border2)",
+                }}>
+                <span style={{ color: "#FFF", fontWeight: 800, fontSize: 13 }}>
+                  {staffInfo.full_name?.charAt(0).toUpperCase()}
+                </span>
+              </div>
+
+              {/* Dropdown */}
+              {profileOpen && (
+                <>
+                  {/* Backdrop to close on outside click */}
+                  <div onClick={() => setProfileOpen(false)}
+                    style={{ position: "fixed", inset: 0, zIndex: 99 }} />
+
+                  <div style={{
+                    position: "absolute", top: 38, right: 0,
+                    background: "var(--surface)", border: "1px solid var(--border2)",
+                    borderRadius: 10, padding: 14, minWidth: 180, zIndex: 100,
+                    boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
+                  }}>
+                    <p style={{ fontSize: 13, fontWeight: 800, color: "var(--text)", margin: "0 0 2px" }}>
+                      {staffInfo.full_name}
+                    </p>
+                    <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-muted)", margin: "0 0 12px" }}>
+                      {staffInfo.role}
+                    </p>
+                    <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10 }}>
+                      <button onClick={handleLogout}
+                        style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "#DC2626", background: "transparent", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", padding: 0 }}>
+                        ↩ Sign Out
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+
+
         </div>
       </div>
     </nav>

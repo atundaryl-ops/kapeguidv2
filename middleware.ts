@@ -22,22 +22,57 @@ export async function middleware(request: NextRequest) {
   );
 
   const { data: { user } } = await supabase.auth.getUser();
-
   const { pathname } = request.nextUrl;
 
-  // Protected staff routes
-  const staffRoutes = ["/dashboard", "/customers", "/scan", "/checkins", "/staff", "/settings"];
-
+  const staffRoutes = ["/dashboard", "/customers", "/scan", "/checkins", "/settings"];
+  const customerRoutes = ["/me"];
   const isStaffRoute = staffRoutes.some((route) => pathname.startsWith(route));
+  const isCustomerRoute = customerRoutes.some((route) => pathname.startsWith(route));
 
-  // Redirect to login if not authenticated
-  if (isStaffRoute && !user) {
+  // Not logged in — redirect to login
+  if ((isStaffRoute || isCustomerRoute) && !user) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // Redirect to dashboard if already logged in and visiting login page
-  if (pathname === "/login" && user) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+  if (user && isStaffRoute) {
+    // Check if user is actually staff
+    const { data: staffData } = await supabase
+      .from("staff")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    // Not staff — redirect to /me
+    if (!staffData) {
+      return NextResponse.redirect(new URL("/me", request.url));
+    }
+  }
+
+  if (user && isCustomerRoute) {
+    // Check if user is staff trying to access /me
+    const { data: staffData } = await supabase
+      .from("staff")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    // Is staff — redirect to /dashboard
+    if (staffData) {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
+  }
+
+  // Redirect away from login if already authenticated
+  if ((pathname === "/login") && user) {
+    const { data: staffData } = await supabase
+      .from("staff")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    return NextResponse.redirect(
+      new URL(staffData ? "/dashboard" : "/me", request.url)
+    );
   }
 
   return supabaseResponse;
