@@ -91,35 +91,44 @@ function CustomersContent() {
             value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
 
-        {/* Filter tabs + Select */}
-        <div className="flex items-center gap-2 mb-6 flex-wrap">
-          {(["all", "active", "inactive", "pending", "rejected"] as FilterType[]).map((f) => (
-            <button key={f} onClick={() => setFilter(f)} className="btn"
-              style={{
-                padding: "5px 14px", fontSize: 11,
-                background: filter === f ? "var(--text)" : "transparent",
-                color:      filter === f ? "var(--bg)"  : "var(--text-muted)",
-                border:     `1px solid ${filter === f ? "var(--text)" : "var(--border)"}`,
-              }}>
-              {f === "all"      && `All (${counts.all})`}
-              {f === "active"   && `● Active (${counts.active})`}
-              {f === "inactive" && `○ Inactive (${counts.inactive})`}
-              {f === "rejected" && `✕ Rejected (${counts.rejected})`}
-              {f === "pending"  && (
-                <span className="flex items-center gap-1.5">
-                  ◎ Pending
-                  {counts.pending > 0 && (
-                    <span style={{ background: "#DC2626", color: "#FFF", borderRadius: 99, fontSize: 9, fontWeight: 700, padding: "1px 5px" }}>
-                      {counts.pending}
-                    </span>
-                  )}
-                </span>
-              )}
-            </button>
-          ))}
+        {/* Filter dropdown + Select */}
+<div className="flex items-center gap-2 mb-6">
+  <div className="relative">
+    <select
+      value={filter}
+      onChange={(e) => setFilter(e.target.value as FilterType)}
+      style={{
+        padding: "7px 32px 7px 12px", fontSize: 12, fontFamily: "Poppins, sans-serif",
+        fontWeight: 600, borderRadius: 6, cursor: "pointer", outline: "none",
+        background: "var(--surface)", color: "var(--text)",
+        border: "1px solid var(--border)", appearance: "none",
+      }}>
+      <option value="all">All ({counts.all})</option>
+      <option value="active">● Active ({counts.active})</option>
+      <option value="inactive">○ Inactive ({counts.inactive})</option>
+      <option value="pending">◎ Pending ({counts.pending})</option>
+      <option value="rejected">✕ Rejected ({counts.rejected})</option>
+    </select>
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+      style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "var(--text-muted)" }}>
+      <path d="M6 9l6 6 6-6"/>
+    </svg>
+    {counts.pending > 0 && (
+      <div style={{
+        position: "absolute", top: -4, right: -4,
+        minWidth: 16, height: 16, borderRadius: 99,
+        background: "#DC2626", color: "#FFF",
+        fontSize: 9, fontWeight: 700,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        padding: "0 4px",
+      }}>
+        {counts.pending}
+      </div>
+    )}
+  </div>
 
-          {/* Divider */}
-          <div style={{ width: 1, height: 20, background: "var(--border)", margin: "0 4px" }} />
+  {/* Divider */}
+  <div style={{ width: 1, height: 20, background: "var(--border)", margin: "0 4px" }} />
 
           {/* Select / Select All / Delete / Cancel */}
           {selectMode ? (
