@@ -1,8 +1,9 @@
 "use client";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { createBrowserClient } from "@supabase/ssr";
 
 const Logo = () => (
   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -21,7 +22,19 @@ const Logo = () => (
 
 export default function Navbar() {
   const path = usePathname();
+  const router = useRouter();
   const [pendingCount, setPendingCount] = useState(0);
+
+  const supabaseClient = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+
+  async function handleLogout() {
+    await supabaseClient.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  }
 
   useEffect(() => {
     async function fetchPending() {
@@ -106,6 +119,16 @@ export default function Navbar() {
               </Link>
             );
           })}
+
+          {/* Sign Out */}
+          <button onClick={handleLogout}
+            style={{
+              fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase",
+              color: "var(--text-muted)", background: "transparent", border: "1px solid transparent",
+              borderRadius: 6, padding: "6px 12px", cursor: "pointer", fontFamily: "Poppins, sans-serif",
+            }}>
+            Sign Out
+          </button>
         </div>
       </div>
     </nav>

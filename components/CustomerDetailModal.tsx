@@ -448,6 +448,7 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
         </div>
 
         {/* Footer */}
+            {tab === "details" && (
             <div className="flex gap-2 p-5 flex-shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
               {editing ? (
                 <>
@@ -527,6 +528,7 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
             </>
           )}
         </div>
+            )}
       </div>
 
           {/* Screenshot Lightbox */}

@@ -1,101 +1,252 @@
+"use client";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 
-export default function Home() {
+export default function KaPoepleLanding() {
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 40);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const menu = [
+    { name: "Brewed Coffee", price: "₱89", desc: "Classic drip, dark roast", tag: "BESTSELLER" },
+    { name: "Kapé Latte", price: "₱120", desc: "Espresso & steamed milk", tag: null },
+    { name: "Brown Sugar Milk Tea", price: "₱110", desc: "Tiger stripes & pearls", tag: "NEW" },
+    { name: "Dirty Matcha", price: "₱130", desc: "Espresso shot over matcha", tag: null },
+    { name: "Iced Americano", price: "₱95", desc: "Bold & refreshing", tag: null },
+    { name: "Kapé Frappe", price: "₱140", desc: "Blended coffee delight", tag: "NEW" },
+  ];
+
+  const benefits = [
+    { icon: "☕", title: "Free Coffee Monthly", desc: "Every member gets one free coffee every month, no strings attached." },
+    { icon: "✦", title: "Priority Service", desc: "Skip the queue on busy days. Members always come first." },
+    { icon: "◈", title: "Visit Tracking", desc: "We remember every visit. Your loyalty never goes unnoticed." },
+    { icon: "♡", title: "Exclusive Promos", desc: "Members-only deals, seasonal discounts, and surprise rewards." },
+  ];
+
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center relative px-6 overflow-hidden" style={{ background: "var(--bg)" }}>
-      <div className="relative z-10 w-full max-w-sm animate-fade-in">
+    <div style={{ fontFamily: "Poppins, sans-serif", background: "#FAFAFA", color: "#0A0A0A", overflowX: "hidden" }}>
 
-        {/* Logo mark */}
-        <div className="text-center mb-10">
-          <div className="mb-5 flex justify-center">
-            <img src="/images/logo.jpg" alt="KapeGuid Logo" style={{ width: 112, height: 112, objectFit: "contain", borderRadius: 16 }} />
+      {/* ── Navbar ── */}
+      <nav style={{
+        position: "fixed", top: 0, left: 0, right: 0, zIndex: 50,
+        background: scrolled ? "rgba(250,250,250,0.95)" : "transparent",
+        backdropFilter: scrolled ? "blur(12px)" : "none",
+        borderBottom: scrolled ? "1px solid rgba(0,0,0,0.08)" : "none",
+        transition: "all 0.3s ease",
+        padding: "0 24px", height: 64,
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+      }}>
+        <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ width: 32, height: 32, background: "#3B1F00", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <span style={{ color: "#FFF", fontWeight: 900, fontSize: 18, lineHeight: 1 }}>!</span>
           </div>
-          <h1 style={{ fontFamily: "Poppins, sans-serif", fontSize: 36, fontWeight: 800, letterSpacing: "-0.02em", color: "var(--text)" }}>
-            kape<span style={{ color: "var(--warm)" }}>guid.</span>
-          </h1>
-          <p className="mt-2 text-xs tracking-widest uppercase" style={{ color: "var(--text-muted)" }}>
-            Coffee Shop · Customer System
-          </p>
-        </div>
+          <span style={{ fontWeight: 800, fontSize: 18, color: "#0A0A0A", letterSpacing: "-0.02em" }}>
+            kapé<span style={{ color: "#3B1F00" }}>ople.</span>
+          </span>
+        </Link>
 
-        {/* Divider */}
-        <div className="flex items-center gap-3 mb-8">
-          <div className="flex-1 h-px" style={{ background: "var(--border)" }} />
-          <span style={{ color: "var(--text-faint)", fontSize: 10 }}>◆</span>
-          <div className="flex-1 h-px" style={{ background: "var(--border)" }} />
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex flex-col gap-2">
-          {[
-            {
-              href: "/dashboard",
-              title: "Dashboard",
-              sub: "Live overview & today's activity",
-              icon: (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
-                  <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
-                </svg>
-              ),
-              highlight: false,
-            },
-            {
-              href: "/scan",
-              title: "Scan QR Code",
-              sub: "Check in a customer visit",
-              icon: (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C8B89A" strokeWidth="1.5">
-                  <path d="M4 7V4h3M17 4h3v3M4 17v3h3M17 20h3v-3"/>
-                  <rect x="7" y="7" width="4" height="4"/><rect x="13" y="7" width="4" height="4"/>
-                  <rect x="7" y="13" width="4" height="4"/><rect x="13" y="13" width="4" height="4"/>
-                </svg>
-              ),
-              highlight: true,
-            },
-            {
-              href: "/customers",
-              title: "Customers",
-              sub: "Manage & register members",
-              icon: (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75M21 21v-2a4 4 0 0 0-3-3.87"/>
-                </svg>
-              ),
-              highlight: false,
-            },
-          ].map((item) => (
-            <Link key={item.href} href={item.href} style={{ textDecoration: "none" }}>
-              <div className="flex items-center gap-4 p-4 rounded-sm transition-all group"
-                style={{
-                  background: item.highlight ? "rgba(200,184,154,0.05)" : "var(--surface)",
-                  border: `1px solid ${item.highlight ? "rgba(200,184,154,0.3)" : "var(--border)"}`,
-                }}>
-                <div className="w-9 h-9 flex items-center justify-center flex-shrink-0 rounded-sm"
-                  style={{ background: "var(--surface2)", color: item.highlight ? "var(--warm)" : "var(--text-muted)" }}>
-                  {item.icon}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium" style={{ color: item.highlight ? "var(--warm)" : "var(--text)" }}>
-                    {item.title}
-                  </div>
-                  <div className="text-xs mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{item.sub}</div>
-                </div>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                  stroke={item.highlight ? "var(--warm)" : "var(--text-faint)"} strokeWidth="2"
-                  className="flex-shrink-0 group-hover:translate-x-0.5 transition-transform">
-                  <path d="M5 12h14M12 5l7 7-7 7"/>
-                </svg>
-              </div>
-            </Link>
+        <div className="hidden md:flex" style={{ gap: 32, alignItems: "center" }}>
+          {["Menu", "Membership", "About"].map((l) => (
+            <a key={l} href={`#${l.toLowerCase()}`} style={{ fontSize: 12, fontWeight: 600, color: "#666", textDecoration: "none", letterSpacing: "0.06em", textTransform: "uppercase", transition: "color 0.2s" }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "#3B1F00")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "#666")}>
+              {l}
+            </a>
           ))}
-        </nav>
+        </div>
 
-        <p className="text-center mt-8 text-xs" style={{ color: "var(--text-faint)" }}>
-          Supabase · Next.js · Vercel
-        </p>
-      </div>
-    </main>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <Link href="/login" style={{
+            textDecoration: "none", fontSize: 12, fontWeight: 700,
+            color: "#0A0A0A", padding: "8px 18px", borderRadius: 6,
+            border: "1px solid rgba(0,0,0,0.15)", transition: "all 0.2s",
+          }}>Log In</Link>
+          <Link href="/signup" style={{
+            textDecoration: "none", fontSize: 12, fontWeight: 700,
+            color: "#FFF", padding: "8px 18px", borderRadius: 6,
+            background: "#3B1F00",
+          }}>Sign Up</Link>
+        </div>
+      </nav>
+
+      {/* ── Hero ── */}
+      <section style={{
+        minHeight: "100vh", display: "flex", flexDirection: "column",
+        alignItems: "center", justifyContent: "center", textAlign: "center",
+        padding: "120px 24px 80px",
+        background: "radial-gradient(ellipse at 50% 0%, rgba(59,31,0,0.08) 0%, transparent 70%)",
+        position: "relative",
+      }}>
+        <div style={{
+          position: "absolute", inset: 0, zIndex: 0,
+          backgroundImage: "radial-gradient(rgba(0,0,0,0.06) 1px, transparent 1px)",
+          backgroundSize: "24px 24px",
+        }} />
+        <div style={{ position: "relative", zIndex: 1, maxWidth: 680 }}>
+          <div style={{
+            display: "inline-flex", alignItems: "center", gap: 8,
+            background: "rgba(59,31,0,0.06)", border: "1px solid rgba(59,31,0,0.15)",
+            borderRadius: 99, padding: "6px 16px", marginBottom: 32,
+          }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#3B1F00", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+              ☕ Now Accepting Members
+            </span>
+          </div>
+
+          <h1 style={{
+            fontSize: "clamp(42px, 8vw, 80px)", fontWeight: 900,
+            color: "#0A0A0A", letterSpacing: "-0.03em", lineHeight: 1.05, marginBottom: 24,
+          }}>
+            Where every cup<br />
+            <span style={{ color: "#3B1F00" }}>tells a story.</span>
+          </h1>
+
+          <p style={{ fontSize: 16, color: "#666", lineHeight: 1.7, marginBottom: 40, maxWidth: 480, margin: "0 auto 40px" }}>
+            KapéoPle is more than a coffee shop — it's a community. Join our membership program and enjoy free coffee, exclusive perks, and a place that feels like home.
+          </p>
+
+          <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+            <Link href="/signup" style={{
+              textDecoration: "none", padding: "14px 32px", borderRadius: 8,
+              background: "#3B1F00", color: "#FFF", fontWeight: 700, fontSize: 14,
+            }}>Become a Member</Link>
+            <a href="#menu" style={{
+              textDecoration: "none", padding: "14px 32px", borderRadius: 8,
+              background: "transparent", color: "#0A0A0A", fontWeight: 700, fontSize: 14,
+              border: "1px solid rgba(0,0,0,0.15)",
+            }}>See Our Menu ↓</a>
+          </div>
+
+          <div style={{ display: "flex", gap: 48, justifyContent: "center", marginTop: 64, flexWrap: "wrap" }}>
+            {[["100+", "Happy Members"], ["₱500", "Per Year"], ["1", "Free Coffee / Mo"]].map(([val, label]) => (
+              <div key={label} style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 28, fontWeight: 900, color: "#0A0A0A", letterSpacing: "-0.02em" }}>{val}</div>
+                <div style={{ fontSize: 11, color: "#999", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 4 }}>{label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Menu ── */}
+      <section id="menu" style={{ padding: "100px 24px", background: "#FFF" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 64 }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: "#3B1F00", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 12 }}>What We Serve</p>
+            <h2 style={{ fontSize: "clamp(32px, 5vw, 52px)", fontWeight: 900, color: "#0A0A0A", letterSpacing: "-0.02em", lineHeight: 1.1 }}>
+              Crafted with love,<br />served with care.
+            </h2>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 20 }}>
+            {menu.map((item) => (
+              <div key={item.name} style={{
+                background: "#FAFAFA", borderRadius: 12, padding: 24,
+                border: "1px solid #EEEEEE", position: "relative", transition: "all 0.2s",
+              }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(59,31,0,0.3)"; (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "#EEEEEE"; (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; }}>
+                {item.tag && (
+                  <span style={{
+                    position: "absolute", top: 16, right: 16, fontSize: 9, fontWeight: 700,
+                    letterSpacing: "0.1em", padding: "3px 8px", borderRadius: 99,
+                    background: item.tag === "NEW" ? "#3B1F00" : "rgba(59,31,0,0.08)",
+                    color: item.tag === "NEW" ? "#FFF" : "#3B1F00",
+                  }}>{item.tag}</span>
+                )}
+                <div style={{ fontSize: 32, marginBottom: 12 }}>☕</div>
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: "#0A0A0A", marginBottom: 4 }}>{item.name}</h3>
+                <p style={{ fontSize: 13, color: "#888", marginBottom: 16 }}>{item.desc}</p>
+                <div style={{ fontSize: 20, fontWeight: 900, color: "#3B1F00" }}>{item.price}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Membership ── */}
+      <section id="membership" style={{ padding: "100px 24px", background: "#0A0A0A", position: "relative", overflow: "hidden" }}>
+        <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
+        <div style={{ maxWidth: 1100, margin: "0 auto", position: "relative", zIndex: 1 }}>
+          <div style={{ textAlign: "center", marginBottom: 64 }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: "#C8A882", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 12 }}>Membership Perks</p>
+            <h2 style={{ fontSize: "clamp(32px, 5vw, 52px)", fontWeight: 900, color: "#FFF", letterSpacing: "-0.02em", lineHeight: 1.1 }}>
+              More than just coffee.<br /><span style={{ color: "#C8A882" }}>It's a lifestyle.</span>
+            </h2>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 20, marginBottom: 64 }}>
+            {benefits.map((b) => (
+              <div key={b.title} style={{
+                background: "rgba(255,255,255,0.04)", borderRadius: 12, padding: 28,
+                border: "1px solid rgba(255,255,255,0.08)", transition: "all 0.2s",
+              }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.07)"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.04)"; }}>
+                <div style={{ fontSize: 28, marginBottom: 16 }}>{b.icon}</div>
+                <h3 style={{ fontSize: 15, fontWeight: 800, color: "#FFF", marginBottom: 8 }}>{b.title}</h3>
+                <p style={{ fontSize: 13, color: "#888", lineHeight: 1.6 }}>{b.desc}</p>
+              </div>
+            ))}
+          </div>
+          <div style={{
+            background: "#3B1F00", borderRadius: 16, padding: "48px 40px",
+            display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 24,
+          }}>
+            <div>
+              <h3 style={{ fontSize: 28, fontWeight: 900, color: "#FFF", letterSpacing: "-0.02em", marginBottom: 8 }}>Join for only ₱500/year</h3>
+              <p style={{ fontSize: 14, color: "rgba(255,255,255,0.6)", lineHeight: 1.6 }}>Register online, pay via GCash, and get your membership card at the shop.</p>
+            </div>
+            <Link href="/signup" style={{
+              textDecoration: "none", padding: "14px 32px", borderRadius: 8,
+              background: "#FFF", color: "#3B1F00", fontWeight: 800, fontSize: 14, flexShrink: 0,
+            }}>Register Now →</Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── About ── */}
+      <section id="about" style={{ padding: "100px 24px", background: "#FFF" }}>
+        <div style={{ maxWidth: 800, margin: "0 auto", textAlign: "center" }}>
+          <p style={{ fontSize: 11, fontWeight: 700, color: "#3B1F00", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 12 }}>Our Story</p>
+          <h2 style={{ fontSize: "clamp(32px, 5vw, 52px)", fontWeight: 900, color: "#0A0A0A", letterSpacing: "-0.02em", lineHeight: 1.1, marginBottom: 24 }}>
+            Born from a love<br />of good coffee.
+          </h2>
+          <p style={{ fontSize: 15, color: "#666", lineHeight: 1.8, marginBottom: 20 }}>
+            KapéoPle started as a small corner in Iloilo City where locals could gather, slow down, and enjoy a well-crafted cup. We believe coffee is best shared — with friends, with strangers, and with the community.
+          </p>
+          <p style={{ fontSize: 15, color: "#666", lineHeight: 1.8, marginBottom: 48 }}>
+            Our membership program was born out of that same spirit — to reward the people who make our shop feel alive every single day.
+          </p>
+          <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
+            {[["2022", "Est."], ["Iloilo", "City"], ["100%", "Local"]].map(([val, label]) => (
+              <div key={label} style={{ background: "#FAFAFA", border: "1px solid #EEE", borderRadius: 12, padding: "20px 32px", textAlign: "center" }}>
+                <div style={{ fontSize: 28, fontWeight: 900, color: "#3B1F00" }}>{val}</div>
+                <div style={{ fontSize: 11, color: "#999", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 4 }}>{label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Footer ── */}
+      <footer style={{ background: "#0A0A0A", padding: "48px 24px" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 24 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ width: 28, height: 28, background: "#3B1F00", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <span style={{ color: "#FFF", fontWeight: 900, fontSize: 16, lineHeight: 1 }}>!</span>
+            </div>
+            <span style={{ fontWeight: 800, fontSize: 16, color: "#FFF", letterSpacing: "-0.02em" }}>kapé<span style={{ color: "#C8A882" }}>ople.</span></span>
+          </div>
+          <p style={{ fontSize: 12, color: "#555" }}>© 2026 KapéoPle. All rights reserved.</p>
+          <div style={{ display: "flex", gap: 24 }}>
+            <Link href="/login" style={{ fontSize: 12, color: "#555", textDecoration: "none", fontWeight: 600 }}>Log In</Link>
+            <Link href="/signup" style={{ fontSize: 12, color: "#C8A882", textDecoration: "none", fontWeight: 600 }}>Sign Up</Link>
+          </div>
+        </div>
+      </footer>
+    </div>
   );
 }

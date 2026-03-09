@@ -29,9 +29,13 @@ export async function POST(req: Request) {
                   <!-- Header -->
                   <tr>
                     <td style="background:#0A0A0A; padding: 32px; text-align:center;">
-                      <div style="width:48px; height:48px; background:#FFFFFF; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; margin-bottom:12px;">
-                        <span style="font-size:24px; font-weight:900; color:#0A0A0A; line-height:1;">!</span>
-                      </div>
+                      <table cellpadding="0" cellspacing="0" style="margin:0 auto 12px auto;">
+                        <tr>
+                          <td style="width:48px; height:48px; background:#FFFFFF; border-radius:50%; text-align:center; vertical-align:middle;">
+                            <span style="font-size:24px; font-weight:900; color:#0A0A0A; line-height:48px;">!</span>
+                          </td>
+                        </tr>
+                      </table>
                       <h1 style="margin:0; color:#FFFFFF; font-size:22px; font-weight:800; letter-spacing:-0.02em;">KapeGuid</h1>
                       <p style="margin:4px 0 0; color:#888888; font-size:12px; letter-spacing:0.08em; text-transform:uppercase;">Coffee Shop · Customer System</p>
                     </td>
