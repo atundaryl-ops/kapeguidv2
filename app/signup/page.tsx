@@ -61,67 +61,47 @@ export default function SignupPage() {
   }
 
   async function handleCreateAccount() {
-    if (!validateAccount()) return;
-    setUploading(true);
-    setServerError("");
+  if (!validateAccount()) return;
+  setUploading(true);
+  setServerError("");
 
-    // Send OTP via Resend
-    const res = await fetch("/api/send-otp", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: form.email.trim() }),
-    });
+  const { data, error } = await supabase.auth.signUp({
+    email: form.email.trim(),
+    password: form.password,
+  });
 
-    const result = await res.json();
-    if (!res.ok) {
-      setServerError(result.error ?? "Failed to send verification email.");
-      setUploading(false);
-      return;
-    }
-
-    setStep("verify");
+  if (error) {
+    setServerError(error.message.includes("already registered")
+      ? "This email is already registered. Please log in instead."
+      : "Something went wrong. Please try again.");
     setUploading(false);
+    return;
   }
 
-  async function handleVerify() {
-    setUploading(true);
-    setServerError("");
+  setAuthUserId(data.user?.id ?? "");
+  setStep("verify");
+  setUploading(false);
+}
 
-    // Verify OTP
-    const res = await fetch("/api/verify-otp", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: form.email.trim(), code: verifyCode.trim() }),
-    });
+async function handleVerify() {
+  setUploading(true);
+  setServerError("");
 
-    const result = await res.json();
-    if (!res.ok) {
-      setServerError(result.error ?? "Invalid code. Please try again.");
-      setUploading(false);
-      return;
-    }
+  const { error } = await supabase.auth.verifyOtp({
+    email: form.email.trim(),
+    token: verifyCode.trim(),
+    type: "signup",
+  });
 
-    // Create Supabase auth account after OTP verified
-    const { data, error } = await supabase.auth.signUp({
-      email: form.email.trim(),
-      password: form.password,
-      options: { emailRedirectTo: undefined },
-    });
-
-    if (error) {
-      setServerError(
-        error.message.includes("already registered")
-          ? "This email is already registered. Please log in instead."
-          : "Something went wrong. Please try again."
-      );
-      setUploading(false);
-      return;
-    }
-
-    setAuthUserId(data.user?.id ?? "");
-    setStep("payment");
+  if (error) {
+    setServerError("Invalid or expired code. Please check your email and try again.");
     setUploading(false);
+    return;
   }
+
+  setStep("payment");
+  setUploading(false);
+}
 
   function handleScreenshotChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
