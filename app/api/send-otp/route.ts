@@ -8,7 +8,11 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+
+
 export async function POST(req: Request) {
+  console.log("RESEND_API_KEY exists:", !!process.env.RESEND_API_KEY);
+  console.log("SUPABASE_SERVICE_ROLE_KEY exists:", !!process.env.SUPABASE_SERVICE_ROLE_KEY);
   const { email } = await req.json();
   if (!email) return NextResponse.json({ error: "Email required" }, { status: 400 });
 

@@ -18,6 +18,10 @@ function addOneYear(dateStr: string): string {
 
 type Step = "details" | "account" | "verify" | "payment" | "success";
 
+const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 export default function SignupPage() {
   const [step, setStep] = useState<Step>("details");
   const [uploading, setUploading] = useState(false);
@@ -34,11 +38,6 @@ export default function SignupPage() {
     birthdate: "", gender: "", gender_other: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
-
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
 
   function validateDetails() {
     const e: Record<string, string> = {};
