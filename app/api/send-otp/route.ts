@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY ?? "");
-export const otpStore: Record<string, { code: string; expires: number }> = {};
+import { otpStore } from "@/lib/otpStore";
 
 export async function POST(req: Request) {
   const { email } = await req.json();
