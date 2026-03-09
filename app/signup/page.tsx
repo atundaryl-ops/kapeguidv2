@@ -61,47 +61,47 @@ export default function SignupPage() {
   }
 
   async function handleCreateAccount() {
-  if (!validateAccount()) return;
-  setUploading(true);
-  setServerError("");
+    if (!validateAccount()) return;
+    setUploading(true);
+    setServerError("");
 
-  const { data, error } = await supabase.auth.signUp({
-    email: form.email.trim(),
-    password: form.password,
-  });
+    const { data, error } = await supabase.auth.signUp({
+      email: form.email.trim(),
+      password: form.password,
+    });
 
-  if (error) {
-    setServerError(error.message.includes("already registered")
-      ? "This email is already registered. Please log in instead."
-      : "Something went wrong. Please try again.");
+    if (error) {
+      setServerError(error.message.includes("already registered")
+        ? "This email is already registered. Please log in instead."
+        : "Something went wrong. Please try again.");
+      setUploading(false);
+      return;
+    }
+
+    setAuthUserId(data.user?.id ?? "");
+    setStep("payment"); // skip verify step entirely
     setUploading(false);
-    return;
   }
 
-  setAuthUserId(data.user?.id ?? "");
-  setStep("verify");
-  setUploading(false);
-}
+  async function handleVerify() {
+    setUploading(true);
+    setServerError("");
 
-async function handleVerify() {
-  setUploading(true);
-  setServerError("");
+    const { error } = await supabase.auth.verifyOtp({
+      email: form.email.trim(),
+      token: verifyCode.trim(),
+      type: "signup",
+    });
 
-  const { error } = await supabase.auth.verifyOtp({
-    email: form.email.trim(),
-    token: verifyCode.trim(),
-    type: "signup",
-  });
+    if (error) {
+      setServerError("Invalid or expired code. Please check your email and try again.");
+      setUploading(false);
+      return;
+    }
 
-  if (error) {
-    setServerError("Invalid or expired code. Please check your email and try again.");
+    setStep("payment");
     setUploading(false);
-    return;
   }
-
-  setStep("payment");
-  setUploading(false);
-}
 
   function handleScreenshotChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
