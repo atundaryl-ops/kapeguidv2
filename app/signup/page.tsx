@@ -163,8 +163,8 @@ export default function SignupPage() {
 
     if (error) {
       setServerError(
-        error.message.includes("unique")
-          ? "This phone number is already registered."
+        error.code === "23505"
+          ? "This phone number or email is already registered. Please log in instead."
           : "Something went wrong. Please try again."
       );
       setUploading(false);
