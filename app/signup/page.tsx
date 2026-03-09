@@ -290,7 +290,7 @@ export default function SignupPage() {
           <div style={{ background: "#FFF", border: "1px solid #E5E5E5", borderRadius: 12, padding: 20, marginBottom: 16, textAlign: "center" }}>
             <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#888", marginBottom: 4 }}>Scan to Pay via GCash</p>
             <p style={{ fontSize: 20, fontWeight: 800, color: "#0A0A0A", marginBottom: 14 }}>₱500.00</p>
-            <img src="/images/gcash-qr.jpg" alt="GCash QR Code" style={{ width: 220, height: 220, objectFit: "contain", borderRadius: 8, margin: "0 auto", display: "block" }} />
+            <img src="/images/gcash-qr.png" alt="GCash QR Code" style={{ width: 220, height: 220, objectFit: "contain", borderRadius: 8, margin: "0 auto", display: "block" }} />
             <p style={{ fontSize: 12, color: "#888", marginTop: 12 }}>Open GCash → Scan QR → Enter <strong style={{ color: "#0A0A0A" }}>₱500</strong> → Pay</p>
           </div>
 
