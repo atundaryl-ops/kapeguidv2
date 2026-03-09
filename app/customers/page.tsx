@@ -13,12 +13,12 @@ type FilterType = "all" | "active" | "inactive" | "pending" | "rejected";
 function CustomersContent() {
   const searchParams = useSearchParams();
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [filtered, setFiltered]   = useState<Customer[]>([]);
-  const [loading, setLoading]     = useState(true);
-  const [search, setSearch]       = useState("");
-  const [filter, setFilter]       = useState<FilterType>((searchParams.get("status") as FilterType) ?? "all");
-  const [showAdd, setShowAdd]     = useState(false);
-  const [selected, setSelected]   = useState<Customer | null>(null);
+  const [filtered, setFiltered] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<FilterType>((searchParams.get("status") as FilterType) ?? "all");
+  const [showAdd, setShowAdd] = useState(false);
+  const [selected, setSelected] = useState<Customer | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [selectMode, setSelectMode] = useState(false);
 
@@ -28,14 +28,23 @@ function CustomersContent() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { fetchCustomers(); }, [fetchCustomers]);
+  useEffect(() => {
+    fetchCustomers();
+
+    const ch = supabase.channel("customers-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "customers" }, fetchCustomers)
+      .on("postgres_changes", { event: "*", schema: "public", table: "visits" }, fetchCustomers)
+      .subscribe();
+
+    return () => { supabase.removeChannel(ch); };
+  }, [fetchCustomers]);
 
   useEffect(() => {
     const q = search.toLowerCase();
     let list = customers;
-    if (filter === "active")   list = list.filter((c) => c.is_active);
+    if (filter === "active") list = list.filter((c) => c.is_active);
     if (filter === "inactive") list = list.filter((c) => !c.is_active && c.payment_status !== "submitted" && c.payment_status !== "rejected");
-    if (filter === "pending")  list = list.filter((c) => c.payment_status === "submitted");
+    if (filter === "pending") list = list.filter((c) => c.payment_status === "submitted");
     if (filter === "rejected") list = list.filter((c) => c.payment_status === "rejected");
     if (q) list = list.filter((c) =>
       getDisplayName(c).toLowerCase().includes(q) ||
@@ -54,10 +63,10 @@ function CustomersContent() {
   }
 
   const counts = {
-    all:      customers.length,
-    active:   customers.filter((c) => c.is_active).length,
+    all: customers.length,
+    active: customers.filter((c) => c.is_active).length,
     inactive: customers.filter((c) => !c.is_active && c.payment_status !== "submitted" && c.payment_status !== "rejected").length,
-    pending:  customers.filter((c) => c.payment_status === "submitted").length,
+    pending: customers.filter((c) => c.payment_status === "submitted").length,
     rejected: customers.filter((c) => c.payment_status === "rejected").length,
   };
 
@@ -75,7 +84,7 @@ function CustomersContent() {
             <h1 style={{ fontSize: 28, fontWeight: 800, color: "var(--text)", letterSpacing: "-0.02em" }}>Customers</h1>
           </div>
           <button className="btn btn-primary" onClick={() => setShowAdd(true)} style={{ marginTop: 4 }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14"/></svg>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14" /></svg>
             Add Customer
           </button>
         </div>
@@ -84,7 +93,7 @@ function CustomersContent() {
         <div className="relative mb-3">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
             className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--text-muted)" }}>
-            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
           </svg>
           <input className="input-field" style={{ paddingLeft: "2.25rem" }}
             placeholder="Search by name, phone or email…"
@@ -92,43 +101,43 @@ function CustomersContent() {
         </div>
 
         {/* Filter dropdown + Select */}
-<div className="flex items-center gap-2 mb-6">
-  <div className="relative">
-    <select
-      value={filter}
-      onChange={(e) => setFilter(e.target.value as FilterType)}
-      style={{
-        padding: "7px 32px 7px 12px", fontSize: 12, fontFamily: "Poppins, sans-serif",
-        fontWeight: 600, borderRadius: 6, cursor: "pointer", outline: "none",
-        background: "var(--surface)", color: "var(--text)",
-        border: "1px solid var(--border)", appearance: "none",
-      }}>
-      <option value="all">All ({counts.all})</option>
-      <option value="active">● Active ({counts.active})</option>
-      <option value="inactive">○ Inactive ({counts.inactive})</option>
-      <option value="pending">◎ Pending ({counts.pending})</option>
-      <option value="rejected">✕ Rejected ({counts.rejected})</option>
-    </select>
-    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
-      style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "var(--text-muted)" }}>
-      <path d="M6 9l6 6 6-6"/>
-    </svg>
-    {counts.pending > 0 && (
-      <div style={{
-        position: "absolute", top: -4, right: -4,
-        minWidth: 16, height: 16, borderRadius: 99,
-        background: "#DC2626", color: "#FFF",
-        fontSize: 9, fontWeight: 700,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        padding: "0 4px",
-      }}>
-        {counts.pending}
-      </div>
-    )}
-  </div>
+        <div className="flex items-center gap-2 mb-6">
+          <div className="relative">
+            <select
+              value={filter}
+              onChange={(e) => setFilter(e.target.value as FilterType)}
+              style={{
+                padding: "7px 32px 7px 12px", fontSize: 12, fontFamily: "Poppins, sans-serif",
+                fontWeight: 600, borderRadius: 6, cursor: "pointer", outline: "none",
+                background: "var(--surface)", color: "var(--text)",
+                border: "1px solid var(--border)", appearance: "none",
+              }}>
+              <option value="all">All ({counts.all})</option>
+              <option value="active">● Active ({counts.active})</option>
+              <option value="inactive">○ Inactive ({counts.inactive})</option>
+              <option value="pending">◎ Pending ({counts.pending})</option>
+              <option value="rejected">✕ Rejected ({counts.rejected})</option>
+            </select>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+              style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "var(--text-muted)" }}>
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+            {counts.pending > 0 && (
+              <div style={{
+                position: "absolute", top: -4, right: -4,
+                minWidth: 16, height: 16, borderRadius: 99,
+                background: "#DC2626", color: "#FFF",
+                fontSize: 9, fontWeight: 700,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                padding: "0 4px",
+              }}>
+                {counts.pending}
+              </div>
+            )}
+          </div>
 
-  {/* Divider */}
-  <div style={{ width: 1, height: 20, background: "var(--border)", margin: "0 4px" }} />
+          {/* Divider */}
+          <div style={{ width: 1, height: 20, background: "var(--border)", margin: "0 4px" }} />
 
           {/* Select / Select All / Delete / Cancel */}
           {selectMode ? (
@@ -230,22 +239,21 @@ function CustomersContent() {
                         {(() => {
                           const expired = c.expiry_date && new Date(c.expiry_date) < new Date();
                           return (
-                            <span className={`badge ${
-                              c.payment_status === "rejected" ? "badge-red" :
+                            <span className={`badge ${c.payment_status === "rejected" ? "badge-red" :
                               c.payment_status === "submitted" ? "badge-amber" :
-                              expired ? "badge-red" :
-                              c.is_active ? "badge-green" : "badge-gray"
-                            }`}>
+                                expired ? "badge-red" :
+                                  c.is_active ? "badge-green" : "badge-gray"
+                              }`}>
                               {c.payment_status === "rejected" ? "Rejected" :
-                               c.payment_status === "submitted" ? "Pending" :
-                               expired ? "Expired" :
-                               c.is_active ? "Active" : "Inactive"}
+                                c.payment_status === "submitted" ? "Pending" :
+                                  expired ? "Expired" :
+                                    c.is_active ? "Active" : "Inactive"}
                             </span>
                           );
                         })()}
                       </td>
                       <td style={{ padding: "12px 14px" }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: "var(--text-faint)" }}><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: "var(--text-faint)" }}><path d="M5 12h14M12 5l7 7-7 7" /></svg>
                       </td>
                     </tr>
                   ))}
@@ -276,16 +284,15 @@ function CustomersContent() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <span className={`badge ${
-                        c.payment_status === "rejected" ? "badge-red" :
+                      <span className={`badge ${c.payment_status === "rejected" ? "badge-red" :
                         c.payment_status === "submitted" ? "badge-amber" :
-                        c.expiry_date && new Date(c.expiry_date) < new Date() ? "badge-red" :
-                        c.is_active ? "badge-green" : "badge-gray"
-                      }`}>
+                          c.expiry_date && new Date(c.expiry_date) < new Date() ? "badge-red" :
+                            c.is_active ? "badge-green" : "badge-gray"
+                        }`}>
                         {c.payment_status === "rejected" ? "Rejected" :
-                         c.payment_status === "submitted" ? "Pending" :
-                         c.expiry_date && new Date(c.expiry_date) < new Date() ? "Expired" :
-                         c.is_active ? "Active" : "Inactive"}
+                          c.payment_status === "submitted" ? "Pending" :
+                            c.expiry_date && new Date(c.expiry_date) < new Date() ? "Expired" :
+                              c.is_active ? "Active" : "Inactive"}
                       </span>
                       <div className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{c.visit_count} visits</div>
                     </div>
