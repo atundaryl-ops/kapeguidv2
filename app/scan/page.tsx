@@ -254,7 +254,7 @@ if (isExpired) {
                   </div>
                   <button
                     className="btn w-full justify-center"
-                    style={{ background: "var(--warm)", color: "#000", border: "none", padding: "10px", fontWeight: 700 }}
+                    style={{ background: "var(--warm)", color: "#e7dddd", border: "none", padding: "10px", fontWeight: 700 }}
                     onClick={handleRedeemCoffee}
                     disabled={redeeming}>
                     {redeeming ? "Saving…" : "☕ Redeem Free Coffee"}

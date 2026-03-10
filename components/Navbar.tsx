@@ -95,7 +95,7 @@ export default function Navbar() {
   return (
     <nav className="sticky top-0 z-40" style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}>
       <div className="max-w-6xl mx-auto px-4 flex items-center justify-between" style={{ height: 56 }}>
-        <Link href="/" style={{ textDecoration: "none" }}>
+        <Link href="/dashboard" style={{ textDecoration: "none" }}>
           <Logo />
         </Link>
 
@@ -157,11 +157,11 @@ export default function Navbar() {
                     borderRadius: 10, padding: 14, minWidth: 180, zIndex: 100,
                     boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
                   }}>
-                    <p style={{ fontSize: 13, fontWeight: 800, color: "var(--text)", margin: "0 0 2px" }}>
+                    <p style={{ fontSize: 13, fontWeight: 800, textTransform: "uppercase", color: "var(--text)", margin: "0 0 2px" }}>
                       {staffInfo.full_name}
                     </p>
                     <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-muted)", margin: "0 0 12px" }}>
-                      {staffInfo.role}
+                      {staffInfo.role === "owner" ? "👑 Owner" : "🏪 Staff"}
                     </p>
                     <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10 }}>
                       <button onClick={handleLogout}

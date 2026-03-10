@@ -30,6 +30,7 @@ export type Customer = {
   birthdate: string | null;
   gender: string | null;
   auth_id: string | null;
+  password_changed: boolean | null;
 };
 
 export type Visit = {

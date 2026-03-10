@@ -22,6 +22,7 @@ type Customer = {
     card_issue_date: string;
     expiry_date: string;
     access_code: string;
+    password_changed: boolean | null;
 };
 
 type Tab = "membership" | "profile" | "password";
@@ -40,7 +41,7 @@ export default function MePage() {
     const [confirmPassword, setConfirmPassword] = useState("");
 
     const router = useRouter();
-    
+
 
     useEffect(() => {
         async function load() {
@@ -97,12 +98,23 @@ export default function MePage() {
 
         if (error) {
             setErrorMsg("Failed to update password. Please try again.");
-        } else {
-            setSuccessMsg("Password updated successfully!");
-            setCurrentPassword("");
-            setNewPassword("");
-            setConfirmPassword("");
+            setSaving(false);
+            return;
         }
+
+        // Mark password as changed and activate account
+        if (customer && !customer.password_changed) {
+            await supabase
+                .from("customers")
+                .update({ password_changed: true, is_active: true, free_coffee: true })
+                .eq("id", customer.id);
+
+            setCustomer({ ...customer, password_changed: true, is_active: true, free_coffee: true });
+        }
+
+        setSuccessMsg("Password updated!");
+        setNewPassword("");
+        setConfirmPassword("");
         setSaving(false);
     }
 
@@ -117,7 +129,7 @@ export default function MePage() {
     if (loading) {
         return (
             <main style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#FAFAFA", fontFamily: "Poppins, sans-serif" }}>
-                <p style={{ color: "#888", fontSize: 14 }}>Loading your membership…</p>
+                <p style={{ color: "#888", fontSize: 14 }}>Loading...</p>
             </main>
         );
     }
@@ -208,6 +220,19 @@ export default function MePage() {
                                 </div>
                             </div>
                         </div>
+
+                        {!customer.password_changed && !customer.is_active && customer.payment_status !== "submitted" && (
+                            <div style={{ background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 12, padding: 16, textAlign: "center" }}>
+                                <p style={{ fontSize: 13, fontWeight: 700, color: "#1D4ED8" }}>🔐 One more step!</p>
+                                <p style={{ fontSize: 12, color: "#1E40AF", marginTop: 4, lineHeight: 1.6 }}>
+                                    To activate your account, please go to the <strong>Password</strong> tab and change your password.
+                                </p>
+                                <button onClick={() => setTab("password")}
+                                    style={{ marginTop: 12, padding: "8px 20px", borderRadius: 6, background: "#1D4ED8", color: "#FFF", border: "none", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Poppins, sans-serif" }}>
+                                    Change Password →
+                                </button>
+                            </div>
+                        )}
 
                         {/* Card details */}
                         <div style={{ background: "#FFF", border: "1px solid #E5E5E5", borderRadius: 12, padding: 20 }}>

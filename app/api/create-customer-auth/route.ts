@@ -93,5 +93,5 @@ export async function POST(req: Request) {
     console.error("Email send failed:", emailErr);
   }
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: true, tempPassword });
 }

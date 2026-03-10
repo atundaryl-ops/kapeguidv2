@@ -360,11 +360,8 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
                                       : "✓ Redeemed This Month"}
                           </span>
                         </div>
-                        {customer.free_coffee && !redeemConfirm && !isExpired && customer.payment_status !== "submitted" && customer.payment_status !== "rejected" && customer.is_active && (<button className="btn" style={{ padding: "4px 10px", fontSize: 10, background: "rgba(242,201,76,0.1)", color: "var(--amber)", border: "1px solid rgba(242,201,76,0.3)" }}
-                          onClick={() => setRedeemConfirm(true)}>
-                          Redeem ☕
-                        </button>
-                        )}
+                      
+              
                       </div>
                     </div>
 

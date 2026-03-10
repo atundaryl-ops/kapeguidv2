@@ -28,7 +28,7 @@ export default function SignupPage() {
   const [screenshot, setScreenshot] = useState<File | null>(null);
   const [screenshotPreview, setScreenshotPreview] = useState("");
   const [verifyCode, setVerifyCode] = useState("");
-  const [authUserId, setAuthUserId] = useState("");
+  const [userId, setuserId] = useState("");
 
   const [form, setForm] = useState({
     first_name: "", middle_name: "", last_name: "",
@@ -37,14 +37,31 @@ export default function SignupPage() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  function validateDetails() {
+  async function validateDetails() {
     const e: Record<string, string> = {};
     if (!form.first_name.trim()) e.first_name = "First name is required";
     if (!form.last_name.trim()) e.last_name = "Last name is required";
     if (!form.phone.trim()) e.phone = "Phone number is required";
     else if (!/^9[0-9]{9}$/.test(form.phone.trim())) e.phone = "Must start with 9 and be 10 digits";
     setErrors(e);
-    return Object.keys(e).length === 0;
+    if (!form.birthdate.trim()) e.birthdate = "Birthdate is required";
+    if (!form.gender.trim()) e.gender = "Please Select Your Gender";
+    if (form.gender === "Others" && !form.gender_other.trim()) e.gender_other = "Please specify your gender";
+    if (Object.keys(e).length > 0) return false;
+
+    // Check duplicate phone
+    const { data: existingPhone } = await supabase
+      .from("customers")
+      .select("id")
+      .eq("phone", `+63${form.phone.trim()}`)
+      .single();
+
+    if (existingPhone) {
+      setServerError("This phone number is already registered. Please use a different one.");
+      setUploading(false);
+      return;
+    }
+    return true;
   }
 
   function validateAccount() {
@@ -63,21 +80,20 @@ export default function SignupPage() {
     setUploading(true);
     setServerError("");
 
-    const { data, error } = await supabase.auth.signUp({
-      email: form.email.trim(),
-      password: form.password,
-    });
+    // Just check if email already exists in customers table
+    const { data: existing } = await supabase
+      .from("customers")
+      .select("id")
+      .eq("email", form.email.trim())
+      .single();
 
-    if (error) {
-      setServerError(error.message.includes("already registered")
-        ? "This email is already registered. Please log in instead."
-        : "Something went wrong. Please try again.");
+    if (existing) {
+      setServerError("This email is already registered. Please log in instead.");
       setUploading(false);
       return;
     }
 
-    setAuthUserId(data.user?.id ?? "");
-    setStep("payment"); // skip verify step entirely
+    setStep("payment");
     setUploading(false);
   }
 
@@ -113,6 +129,20 @@ export default function SignupPage() {
     setUploading(true);
     setServerError("");
 
+    // Create auth user here
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: form.email.trim(),
+      password: form.password,
+    });
+
+    if (authError) {
+      setServerError("Something went wrong creating your account. Please go back and try again.");
+      setUploading(false);
+      return;
+    }
+
+    const userId = authData.user?.id ?? null;
+
     const today = new Date().toISOString().slice(0, 10);
     const expiry = addOneYear(today);
     const qr_code = generateQRString(form.first_name, form.last_name);
@@ -135,7 +165,7 @@ export default function SignupPage() {
       payment_status: "submitted",
       birthdate: form.birthdate || null,
       gender: form.gender === "Others" ? form.gender_other : form.gender || null,
-      auth_id: authUserId || null,
+      auth_id: userId,
     }).select().single();
 
     if (error) {
@@ -436,6 +466,7 @@ export default function SignupPage() {
             <input type="date"
               style={{ width: "100%", padding: "9px 11px", borderRadius: 6, border: "1px solid #DDD", fontSize: 13, fontFamily: "Poppins, sans-serif", outline: "none" }}
               value={form.birthdate} onChange={(e) => setForm({ ...form, birthdate: e.target.value })} />
+              {errors.birthdate && <p style={{ fontSize: 10, color: "#DC2626", marginTop: 3 }}>{errors.birthdate}</p>}
           </div>
           <div>
             <label style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "#888", display: "block", marginBottom: 4 }}>Gender</label>
@@ -452,10 +483,12 @@ export default function SignupPage() {
                 placeholder="Please specify your gender"
                 value={form.gender_other} onChange={(e) => setForm({ ...form, gender_other: e.target.value })} />
             )}
+            {errors.gender && <p style={{ fontSize: 10, color: "#DC2626", marginTop: 3 }}>{errors.gender}</p>}  
+            {errors.gender_other && <p style={{ fontSize: 10, color: "#DC2626", marginTop: 3 }}>{errors.gender_other}</p>}  
           </div>
         </div>
 
-        <button onClick={() => { if (validateDetails()) setStep("account"); }}
+        <button onClick={async () => { setServerError(""); if (await validateDetails()) setStep("account"); }}
           style={{ width: "100%", padding: "14px", borderRadius: 8, background: "#0A0A0A", color: "#FFF", border: "none", fontFamily: "Poppins, sans-serif", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
           Continue →
         </button>
