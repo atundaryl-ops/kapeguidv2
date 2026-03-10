@@ -161,7 +161,11 @@ function CustomersContent() {
                   onClick={async () => {
                     if (!confirm(`Delete ${selectedIds.size} account(s)? This cannot be undone.`)) return;
                     await Promise.all(Array.from(selectedIds).map(id =>
-                      supabase.from("customers").delete().eq("id", id)
+                      fetch("/api/delete-customer", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ customerId: id }),
+                      })
                     ));
                     setSelectedIds(new Set());
                     setSelectMode(false);

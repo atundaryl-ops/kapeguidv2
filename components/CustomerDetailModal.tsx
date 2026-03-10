@@ -13,57 +13,57 @@ function addOneYear(dateStr: string): string {
 }
 
 export default function CustomerDetailModal({ customer, onClose, onUpdate }: Props) {
-  const [visits, setVisits]               = useState<Visit[]>([]);
+  const [visits, setVisits] = useState<Visit[]>([]);
   const [loadingVisits, setLoadingVisits] = useState(true);
-  const [editing, setEditing]             = useState(false);
+  const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({
-    first_name:      customer.first_name ?? "",
-    middle_name:     customer.middle_name ?? "",
-    last_name:       customer.last_name ?? "",
-    name:            customer.name ?? "",
-    phone:           customer.phone,
-    email:           customer.email ?? "",
-    notes:           customer.notes ?? "",
-    access_code:     customer.access_code ?? "",
+    first_name: customer.first_name ?? "",
+    middle_name: customer.middle_name ?? "",
+    last_name: customer.last_name ?? "",
+    name: customer.name ?? "",
+    phone: customer.phone,
+    email: customer.email ?? "",
+    notes: customer.notes ?? "",
+    access_code: customer.access_code ?? "",
     card_issue_date: customer.card_issue_date ?? "",
-    expiry_date:     customer.expiry_date ?? "",
-    free_coffee:     customer.free_coffee ?? false,
+    expiry_date: customer.expiry_date ?? "",
+    free_coffee: customer.free_coffee ?? false,
   });
-  const [saving, setSaving]               = useState(false);
+  const [saving, setSaving] = useState(false);
   const [redeemConfirm, setRedeemConfirm] = useState(false);
-  const [redeeming, setRedeeming]         = useState(false);
-  const [qrDataUrl, setQrDataUrl]         = useState("");
-  const [tab, setTab]                     = useState<"details" | "visits" | "qr">("details");
+  const [redeeming, setRedeeming] = useState(false);
+  const [qrDataUrl, setQrDataUrl] = useState("");
+  const [tab, setTab] = useState<"details" | "visits" | "qr">("details");
   const [showScreenshot, setShowScreenshot] = useState(false);
 
   useEffect(() => {
-  // Fetch visits
-  supabase.from("visits").select("*").eq("customer_id", customer.id)
-    .order("visited_at", { ascending: false }).limit(30)
-    .then(({ data }) => { setVisits(data ?? []); setLoadingVisits(false); });
+    // Fetch visits
+    supabase.from("visits").select("*").eq("customer_id", customer.id)
+      .order("visited_at", { ascending: false }).limit(30)
+      .then(({ data }) => { setVisits(data ?? []); setLoadingVisits(false); });
 
-  // Generate QR
-  import("qrcode").then((QRCode) => {
-    QRCode.toDataURL(customer.qr_code, { width: 280, margin: 2, color: { dark: "#000", light: "#FFF" }, errorCorrectionLevel: "H" })
-      .then(setQrDataUrl);
-  });
+    // Generate QR
+    import("qrcode").then((QRCode) => {
+      QRCode.toDataURL(customer.qr_code, { width: 280, margin: 2, color: { dark: "#000", light: "#FFF" }, errorCorrectionLevel: "H" })
+        .then(setQrDataUrl);
+    });
 
-  // Real-time listener for new visits
-  const ch = supabase.channel(`visits-${customer.id}`)
-    .on("postgres_changes", {
-      event: "INSERT",
-      schema: "public",
-      table: "visits",
-      filter: `customer_id=eq.${customer.id}`,
-    }, () => {
-      supabase.from("visits").select("*").eq("customer_id", customer.id)
-        .order("visited_at", { ascending: false }).limit(30)
-        .then(({ data }) => setVisits(data ?? []));
-    })
-    .subscribe();
+    // Real-time listener for new visits
+    const ch = supabase.channel(`visits-${customer.id}`)
+      .on("postgres_changes", {
+        event: "INSERT",
+        schema: "public",
+        table: "visits",
+        filter: `customer_id=eq.${customer.id}`,
+      }, () => {
+        supabase.from("visits").select("*").eq("customer_id", customer.id)
+          .order("visited_at", { ascending: false }).limit(30)
+          .then(({ data }) => setVisits(data ?? []));
+      })
+      .subscribe();
 
-  return () => { supabase.removeChannel(ch); };
-}, [customer]);
+    return () => { supabase.removeChannel(ch); };
+  }, [customer]);
 
   function handleIssueDateChange(val: string) {
     setForm({ ...form, card_issue_date: val, expiry_date: addOneYear(val) });
@@ -74,21 +74,21 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
     const fullName = form.first_name
       ? `${form.first_name} ${form.middle_name ? form.middle_name + " " : ""}${form.last_name}`.trim()
       : form.name;
-    
+
     const isStillActive = form.expiry_date ? new Date(form.expiry_date) > new Date() : false;
     const { error } = await supabase.from("customers").update({
-      name:            fullName,
-      first_name:      form.first_name.trim() || null,
-      middle_name:     form.middle_name.trim() || null,
-      last_name:       form.last_name.trim() || null,
-      phone:           form.phone.trim(),
-      email:           form.email.trim() || null,
-      notes:           form.notes.trim() || null,
-      access_code:     form.access_code.trim() || null,
+      name: fullName,
+      first_name: form.first_name.trim() || null,
+      middle_name: form.middle_name.trim() || null,
+      last_name: form.last_name.trim() || null,
+      phone: form.phone.trim(),
+      email: form.email.trim() || null,
+      notes: form.notes.trim() || null,
+      access_code: form.access_code.trim() || null,
       card_issue_date: form.card_issue_date || null,
-      expiry_date:     form.expiry_date || null,
-      free_coffee:     form.free_coffee,
-      is_active:       isStillActive,
+      expiry_date: form.expiry_date || null,
+      free_coffee: form.free_coffee,
+      is_active: isStillActive,
     }).eq("id", customer.id);
 
     setSaving(false);
@@ -112,13 +112,13 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
 
   async function handleRenew() {
     if (!confirm(`Renew ${getDisplayName(customer)}'s card? This sets today as the new issue date + 1 year expiry.`)) return;
-    const newIssue  = new Date().toISOString().slice(0, 10);
+    const newIssue = new Date().toISOString().slice(0, 10);
     const newExpiry = new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().slice(0, 10);
     await supabase.from("customers").update({
       card_issue_date: newIssue,
-      expiry_date:     newExpiry,
-      is_active:       true,
-      free_coffee:     true,
+      expiry_date: newExpiry,
+      is_active: true,
+      free_coffee: true,
     }).eq("id", customer.id);
     onUpdate();
   }
@@ -128,15 +128,19 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
     const currentExpiry = customer.expiry_date ?? new Date().toISOString().slice(0, 10);
     const newExpiry = new Date(new Date(currentExpiry).setFullYear(new Date(currentExpiry).getFullYear() + 1)).toISOString().slice(0, 10);
     await supabase.from("customers").update({
-        expiry_date: newExpiry,
-        is_active:   true,
-      }).eq("id", customer.id);
+      expiry_date: newExpiry,
+      is_active: true,
+    }).eq("id", customer.id);
     onUpdate();
   }
 
   async function deleteCustomer() {
     if (!confirm(`Delete ${getDisplayName(customer)}? This cannot be undone.`)) return;
-    await supabase.from("customers").delete().eq("id", customer.id);
+    await fetch("/api/delete-customer", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ customerId: customer.id }),
+    });
     onUpdate();
   }
 
@@ -153,8 +157,8 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
 
   const tabs = [
     { key: "details", label: "Details" },
-    { key: "visits",  label: `Visits (${customer.visit_count})` },
-    { key: "qr",      label: "QR Code" , disabled: !customer.is_active || isExpired},
+    { key: "visits", label: `Visits (${customer.visit_count})` },
+    { key: "qr", label: "QR Code", disabled: !customer.is_active || isExpired },
   ] as const;
 
   return (
@@ -163,23 +167,23 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
         style={{ background: "var(--surface)", border: "1px solid var(--border2)", maxHeight: "90vh", display: "flex", flexDirection: "column" }}>
 
         {/* Pending Payment Banner */}
-                  {customer.payment_status === "submitted" && (
-                    <div className="px-5 pt-4" style={{ flexShrink: 0 }}>
-                      <div className="rounded p-3 flex items-center justify-between gap-3"
-                        style={{ background: "rgba(180,83,9,0.08)", border: "1px solid rgba(180,83,9,0.25)" }}>
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: "var(--amber)" }} />
-                          <span className="text-xs font-bold" style={{ color: "var(--amber)" }}>Pending Payment Approval</span>
-                        </div>
-                        {customer.payment_screenshot && (
-                          <button className="btn" onClick={() => setShowScreenshot(true)}
-                            style={{ padding: "3px 10px", fontSize: 10, background: "rgba(180,83,9,0.1)", color: "var(--amber)", border: "1px solid rgba(180,83,9,0.3)" }}>
-                            View Proof
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  )}
+        {customer.payment_status === "submitted" && (
+          <div className="px-5 pt-4" style={{ flexShrink: 0 }}>
+            <div className="rounded p-3 flex items-center justify-between gap-3"
+              style={{ background: "rgba(180,83,9,0.08)", border: "1px solid rgba(180,83,9,0.25)" }}>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: "var(--amber)" }} />
+                <span className="text-xs font-bold" style={{ color: "var(--amber)" }}>Pending Payment Approval</span>
+              </div>
+              {customer.payment_screenshot && (
+                <button className="btn" onClick={() => setShowScreenshot(true)}
+                  style={{ padding: "3px 10px", fontSize: 10, background: "rgba(180,83,9,0.1)", color: "var(--amber)", border: "1px solid rgba(180,83,9,0.3)" }}>
+                  View Proof
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Header */}
         <div className="flex items-center justify-between p-5 flex-shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
@@ -191,26 +195,25 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
             <div>
               <h2 style={{ fontSize: 16, fontWeight: 800, color: "var(--text)", lineHeight: 1.2 }}>{displayName}</h2>
               <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                <span className={`badge ${
-                    customer.payment_status === "rejected" ? "badge-red" :
+                <span className={`badge ${customer.payment_status === "rejected" ? "badge-red" :
                     isExpired ? "badge-red" :
-                    customer.is_active ? "badge-green" : "badge-gray"
+                      customer.is_active ? "badge-green" : "badge-gray"
                   }`}>
-                    {customer.payment_status === "rejected" ? "Rejected" :
+                  {customer.payment_status === "rejected" ? "Rejected" :
                     isExpired ? "Expired" :
-                    customer.is_active ? "Active" : "Inactive"}
-                  </span>
+                      customer.is_active ? "Active" : "Inactive"}
+                </span>
                 <span className="badge badge-warm">{customer.visit_count} visits</span>
                 {customer.free_coffee && !isExpired && customer.is_active && customer.payment_status !== "submitted" && customer.payment_status !== "rejected" && (
                   <span className="badge badge-amber">☕ Free Coffee</span>
                 )}
-                
+
               </div>
             </div>
           </div>
           <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded flex-shrink-0"
             style={{ color: "var(--text-muted)", border: "1px solid var(--border)" }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
           </button>
         </div>
 
@@ -218,19 +221,19 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
         <div className="flex flex-shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
           {tabs.map((t) => (
             <button key={t.key}
-                  onClick={() => !("disabled" in t && t.disabled) && setTab(t.key)}
-                  style={{
-                    padding: "10px 20px", fontSize: 11, fontWeight: 600,
-                    letterSpacing: "0.06em", textTransform: "uppercase",
-                    color: "disabled" in t && t.disabled ? "var(--text-faint)" : tab === t.key ? "var(--text)" : "var(--text-muted)",
-                    background: "none", border: "none",
-                    cursor: "disabled" in t && t.disabled ? "not-allowed" : "pointer",
-                    borderBottom: tab === t.key ? "2px solid var(--warm)" : "2px solid transparent",
-                    marginBottom: -1, transition: "all 0.15s",
-                    opacity: "disabled" in t && t.disabled ? 0.4 : 1,
-                  }}>
-                  {t.label}
-                </button>
+              onClick={() => !("disabled" in t && t.disabled) && setTab(t.key)}
+              style={{
+                padding: "10px 20px", fontSize: 11, fontWeight: 600,
+                letterSpacing: "0.06em", textTransform: "uppercase",
+                color: "disabled" in t && t.disabled ? "var(--text-faint)" : tab === t.key ? "var(--text)" : "var(--text-muted)",
+                background: "none", border: "none",
+                cursor: "disabled" in t && t.disabled ? "not-allowed" : "pointer",
+                borderBottom: tab === t.key ? "2px solid var(--warm)" : "2px solid transparent",
+                marginBottom: -1, transition: "all 0.15s",
+                opacity: "disabled" in t && t.disabled ? 0.4 : 1,
+              }}>
+              {t.label}
+            </button>
           ))}
         </div>
 
@@ -294,13 +297,13 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
                     <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "var(--warm-light)" }}>Basic Info</p>
                     <div className="rounded overflow-hidden" style={{ border: "1px solid var(--border)" }}>
                       {[
-                        { label: "First Name",   value: customer.first_name ?? "—" },
-                        { label: "Middle Name",  value: customer.middle_name ?? "—" },
-                        { label: "Last Name",    value: customer.last_name ?? "—" },
-                        { label: "Phone",        value: customer.phone },
-                        { label: "Email",        value: customer.email ?? "—" },
-                        { label: "Member Since", value: customer.payment_status === "submitted" || customer.payment_status === "rejected" ? "—" : format(new Date(customer.created_at), "MMMM d, yyyy") },                        { label: "Last Visit",   value: customer.last_visit ? format(new Date(customer.last_visit), "MMM d, yyyy · h:mm a") : "Never" },
-                        { label: "Notes",        value: customer.notes ?? "—" },
+                        { label: "First Name", value: customer.first_name ?? "—" },
+                        { label: "Middle Name", value: customer.middle_name ?? "—" },
+                        { label: "Last Name", value: customer.last_name ?? "—" },
+                        { label: "Phone", value: customer.phone },
+                        { label: "Email", value: customer.email ?? "—" },
+                        { label: "Member Since", value: customer.payment_status === "submitted" || customer.payment_status === "rejected" ? "—" : format(new Date(customer.created_at), "MMMM d, yyyy") }, { label: "Last Visit", value: customer.last_visit ? format(new Date(customer.last_visit), "MMM d, yyyy · h:mm a") : "Never" },
+                        { label: "Notes", value: customer.notes ?? "—" },
                       ].map((row, i, arr) => (
                         <div key={row.label} className="flex gap-4 px-4 py-2.5"
                           style={{ borderBottom: i < arr.length - 1 ? "1px solid var(--border)" : "none", background: i % 2 === 0 ? "var(--surface2)" : "transparent" }}>
@@ -323,21 +326,21 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
                           : <span className="text-xs" style={{ color: "var(--text-muted)" }}>—</span>}
                       </div>
                       {/* Card issued */}
-                          {customer.payment_status !== "rejected" && customer.payment_status !== "submitted" && (
-                          <div className="flex items-center gap-4 px-4 py-2.5" style={{ borderBottom: "1px solid var(--border)" }}>
-                           <span className="text-xs font-semibold uppercase tracking-wider w-28 flex-shrink-0" style={{ color: "var(--text-muted)" }}>Card Issued</span>
+                      {customer.payment_status !== "rejected" && customer.payment_status !== "submitted" && (
+                        <div className="flex items-center gap-4 px-4 py-2.5" style={{ borderBottom: "1px solid var(--border)" }}>
+                          <span className="text-xs font-semibold uppercase tracking-wider w-28 flex-shrink-0" style={{ color: "var(--text-muted)" }}>Card Issued</span>
                           <span className="text-xs font-medium" style={{ color: "var(--text)" }}>{customer.card_issue_date ? format(new Date(customer.card_issue_date), "MMMM d, yyyy") : "—"}</span>
-                            </div>
-                          )}
-                          {/* Expiry */}
-                          {customer.payment_status !== "rejected" && customer.payment_status !== "submitted" && (
-                            <div className="flex items-center gap-4 px-4 py-2.5" style={{ background: "var(--surface2)", borderBottom: "1px solid var(--border)" }}>
-                              <span className="text-xs font-semibold uppercase tracking-wider w-28 flex-shrink-0" style={{ color: "var(--text-muted)" }}>Expiry</span>
-                              <span className="text-xs font-medium" style={{ color: isExpired ? "var(--text-muted)" : "var(--text)" }}>
-                                {customer.expiry_date ? `${format(new Date(customer.expiry_date), "MMMM d, yyyy")}${isExpired ? " · Expired" : ""}` : "—"}
-                              </span>
-                            </div>
-                          )}
+                        </div>
+                      )}
+                      {/* Expiry */}
+                      {customer.payment_status !== "rejected" && customer.payment_status !== "submitted" && (
+                        <div className="flex items-center gap-4 px-4 py-2.5" style={{ background: "var(--surface2)", borderBottom: "1px solid var(--border)" }}>
+                          <span className="text-xs font-semibold uppercase tracking-wider w-28 flex-shrink-0" style={{ color: "var(--text-muted)" }}>Expiry</span>
+                          <span className="text-xs font-medium" style={{ color: isExpired ? "var(--text-muted)" : "var(--text)" }}>
+                            {customer.expiry_date ? `${format(new Date(customer.expiry_date), "MMMM d, yyyy")}${isExpired ? " · Expired" : ""}` : "—"}
+                          </span>
+                        </div>
+                      )}
                       {/* Free coffee row */}
                       <div className="flex items-center justify-between px-4 py-2.5"
                         style={{ background: customer.free_coffee ? "rgba(242,201,76,0.04)" : "transparent" }}>
@@ -345,22 +348,22 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
                           <span className="text-xs font-semibold uppercase tracking-wider w-28 flex-shrink-0" style={{ color: "var(--text-muted)" }}>Free Coffee</span>
                           <span className={`badge ${customer.free_coffee && !isExpired ? "badge-amber" : "badge-gray"}`}>
                             {customer.payment_status === "submitted"
-                            ? "Eligible once approved"
-                            : customer.payment_status === "rejected"
-                            ? "Not Eligible"
-                            : isExpired
-                            ? "Not Eligible"
-                            : !customer.is_active
-                            ? "Not Eligible"
-                            : customer.free_coffee
-                            ? "☕ Entitled"   
-                            : "✓ Redeemed This Month"}
-                            </span>
+                              ? "Eligible once approved"
+                              : customer.payment_status === "rejected"
+                                ? "Not Eligible"
+                                : isExpired
+                                  ? "Not Eligible"
+                                  : !customer.is_active
+                                    ? "Not Eligible"
+                                    : customer.free_coffee
+                                      ? "☕ Entitled"
+                                      : "✓ Redeemed This Month"}
+                          </span>
                         </div>
-                            {customer.free_coffee && !redeemConfirm && !isExpired && customer.payment_status !== "submitted" && customer.payment_status !== "rejected" && customer.is_active && (                          <button className="btn" style={{ padding: "4px 10px", fontSize: 10, background: "rgba(242,201,76,0.1)", color: "var(--amber)", border: "1px solid rgba(242,201,76,0.3)" }}
-                            onClick={() => setRedeemConfirm(true)}>
-                            Redeem ☕
-                          </button>
+                        {customer.free_coffee && !redeemConfirm && !isExpired && customer.payment_status !== "submitted" && customer.payment_status !== "rejected" && customer.is_active && (<button className="btn" style={{ padding: "4px 10px", fontSize: 10, background: "rgba(242,201,76,0.1)", color: "var(--amber)", border: "1px solid rgba(242,201,76,0.3)" }}
+                          onClick={() => setRedeemConfirm(true)}>
+                          Redeem ☕
+                        </button>
                         )}
                       </div>
                     </div>
@@ -439,7 +442,7 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
 
               <button className="btn btn-ghost w-full justify-center" onClick={handleDownloadQR}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
                 </svg>
                 Download QR as PNG
               </button>
@@ -448,113 +451,113 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
         </div>
 
         {/* Footer */}
-            {tab === "details" && (
-            <div className="flex gap-2 p-5 flex-shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
-              {editing ? (
-                <>
-                  <button className="btn btn-ghost flex-1 justify-center" onClick={() => setEditing(false)} disabled={saving}>Cancel</button>
-                  <button className="btn btn-primary flex-1 justify-center" onClick={handleSave} disabled={saving}>{saving ? "Saving…" : "Save Changes"}</button>
-                </>
-              ) : (
-                <>
-
-                {customer.payment_status === "submitted" && (
-                   <>
-                  <button className="btn btn-primary flex-1 justify-center"
-                    onClick={async () => {
-                      if (!confirm(`Approve ${displayName}'s membership and activate their account?`)) return;
-                      await supabase.from("customers").update({
-                        is_active:      true,
-                        payment_status: "approved",
-                      }).eq("id", customer.id);
-
-                      // Send approval email if customer has email
-                      if (customer.email) {
-                        await fetch("/api/send-approval-email", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({
-                            email:     customer.email,
-                            firstName: customer.first_name ?? customer.name,
-                            lastName:  customer.last_name ?? "",
-                          }),
-                        });
-                      }
-
-                      onUpdate();
-                    }}>
-                    ✓ Approve
-                  </button>
-                  <button className="btn btn-danger"
-                    onClick={async () => {
-                      if (!confirm(`Reject ${displayName}'s registration?`)) return;
-                      await supabase.from("customers").update({
-                        payment_status: "rejected",
-                      }).eq("id", customer.id);
-                      onUpdate();
-                    }}>
-                    ✗ Reject
-                  </button>
-                </>
-              )}
-                <button className="btn btn-ghost" onClick={() => setEditing(true)}>
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-      Edit
-    </button>
-
-    {customer.payment_status !== "submitted" && (
-  <>
-            {isExpired ? (
-              <button className="btn btn-primary flex-1 justify-center" onClick={handleRenew}>
-                🔄 Renew Card
-              </button>
+        {tab === "details" && (
+          <div className="flex gap-2 p-5 flex-shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
+            {editing ? (
+              <>
+                <button className="btn btn-ghost flex-1 justify-center" onClick={() => setEditing(false)} disabled={saving}>Cancel</button>
+                <button className="btn btn-primary flex-1 justify-center" onClick={handleSave} disabled={saving}>{saving ? "Saving…" : "Save Changes"}</button>
+              </>
             ) : (
               <>
-                <button className="btn btn-warm flex-1 justify-center" onClick={toggleActive}>
-                  {customer.is_active ? "Deactivate" : "Activate"}
+
+                {customer.payment_status === "submitted" && (
+                  <>
+                    <button className="btn btn-primary flex-1 justify-center"
+                      onClick={async () => {
+                        if (!confirm(`Approve ${displayName}'s membership and activate their account?`)) return;
+                        await supabase.from("customers").update({
+                          is_active: true,
+                          payment_status: "approved",
+                        }).eq("id", customer.id);
+
+                        // Send approval email if customer has email
+                        if (customer.email) {
+                          await fetch("/api/send-approval-email", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              email: customer.email,
+                              firstName: customer.first_name ?? customer.name,
+                              lastName: customer.last_name ?? "",
+                            }),
+                          });
+                        }
+
+                        onUpdate();
+                      }}>
+                      ✓ Approve
+                    </button>
+                    <button className="btn btn-danger"
+                      onClick={async () => {
+                        if (!confirm(`Reject ${displayName}'s registration?`)) return;
+                        await supabase.from("customers").update({
+                          payment_status: "rejected",
+                        }).eq("id", customer.id);
+                        onUpdate();
+                      }}>
+                      ✗ Reject
+                    </button>
+                  </>
+                )}
+                <button className="btn btn-ghost" onClick={() => setEditing(true)}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                  Edit
                 </button>
-               {customer.expiry_date && customer.payment_status !== "rejected" && customer.is_active &&(
-                  <button className="btn btn-ghost flex-1 justify-center" onClick={handleExtend}>
-                    + Extend 1yr
-                  </button>
+
+                {customer.payment_status !== "submitted" && (
+                  <>
+                    {isExpired ? (
+                      <button className="btn btn-primary flex-1 justify-center" onClick={handleRenew}>
+                        🔄 Renew Card
+                      </button>
+                    ) : (
+                      <>
+                        <button className="btn btn-warm flex-1 justify-center" onClick={toggleActive}>
+                          {customer.is_active ? "Deactivate" : "Activate"}
+                        </button>
+                        {customer.expiry_date && customer.payment_status !== "rejected" && customer.is_active && (
+                          <button className="btn btn-ghost flex-1 justify-center" onClick={handleExtend}>
+                            + Extend 1yr
+                          </button>
+                        )}
+                      </>
+                    )}
+                    <button className="btn btn-danger" onClick={deleteCustomer} title="Delete">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6M14 11v6M9 6V4h6v2" /></svg>
+                    </button>
+                  </>
                 )}
               </>
             )}
-            <button className="btn btn-danger" onClick={deleteCustomer} title="Delete">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>
-            </button>
-          </>
+          </div>
         )}
-            </>
-          )}
-        </div>
-            )}
       </div>
 
-          {/* Screenshot Lightbox */}
-{showScreenshot && customer.payment_screenshot && (
-  <div
-    style={{
-      position: "fixed", inset: 0, background: "rgba(0,0,0,0.92)",
-      zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center",
-      padding: 16,
-    }}
-    onClick={() => setShowScreenshot(false)}>
-    <div style={{ position: "relative", maxWidth: 420, width: "100%" }}
-      onClick={(e) => e.stopPropagation()}>
-      <div className="flex items-center justify-between mb-3">
-        <span style={{ color: "#FFF", fontSize: 13, fontWeight: 700 }}>Payment Screenshot</span>
-        <button onClick={() => setShowScreenshot(false)}
-          style={{ background: "rgba(255,255,255,0.1)", border: "none", borderRadius: 6, padding: "4px 10px", color: "#FFF", cursor: "pointer", fontSize: 12 }}>
-          Close ✕
-        </button>
-      </div>
-      <img src={customer.payment_screenshot} alt="Payment proof"
-        style={{ width: "100%", borderRadius: 12, display: "block" }} />
-    </div>
-  </div>
-)}
-      
+      {/* Screenshot Lightbox */}
+      {showScreenshot && customer.payment_screenshot && (
+        <div
+          style={{
+            position: "fixed", inset: 0, background: "rgba(0,0,0,0.92)",
+            zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center",
+            padding: 16,
+          }}
+          onClick={() => setShowScreenshot(false)}>
+          <div style={{ position: "relative", maxWidth: 420, width: "100%" }}
+            onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <span style={{ color: "#FFF", fontSize: 13, fontWeight: 700 }}>Payment Screenshot</span>
+              <button onClick={() => setShowScreenshot(false)}
+                style={{ background: "rgba(255,255,255,0.1)", border: "none", borderRadius: 6, padding: "4px 10px", color: "#FFF", cursor: "pointer", fontSize: 12 }}>
+                Close ✕
+              </button>
+            </div>
+            <img src={customer.payment_screenshot} alt="Payment proof"
+              style={{ width: "100%", borderRadius: 12, display: "block" }} />
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
