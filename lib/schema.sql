@@ -1,8 +1,4 @@
--- ============================================
--- KapeGuid Database Schema
--- Run this in your Supabase SQL Editor
--- ============================================
-
+ 
 -- Customers table
 CREATE TABLE IF NOT EXISTS customers (
   id          UUID DEFAULT gen_random_uuid() PRIMARY KEY,

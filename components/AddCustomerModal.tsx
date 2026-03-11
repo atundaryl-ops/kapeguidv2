@@ -33,7 +33,6 @@ export default function AddCustomerModal({ onClose, onSuccess }: Props) {
   const [qrDataUrl, setQrDataUrl] = useState("");
   const [tempPassword, setTempPassword] = useState("");
 
-
   function validate() {
     const e: Record<string, string> = {};
     if (!form.first_name.trim()) e.first_name = "First name is required";
@@ -41,13 +40,12 @@ export default function AddCustomerModal({ onClose, onSuccess }: Props) {
     if (!form.phone.trim()) e.phone = "Phone is required";
     else if (!/^9[0-9]{9}$/.test(form.phone.trim())) e.phone = "Must start with 9 and be 10 digits";
     if (!form.email.trim()) e.email = "Email is required";
-    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Invalid email";
-    setErrors(e);
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Invalid email";
     if (!form.birthdate.trim()) e.birthdate = "Birthdate is required";
-    if (!form.gender.trim()) e.gender = "Please Select Your Gender";
+    if (!form.gender.trim()) e.gender = "Please select your gender";
     if (form.gender === "Others" && !form.gender_other.trim()) e.gender_other = "Please specify your gender";
-    if (Object.keys(e).length > 0) return false;
-    return true; 
+    setErrors(e);
+    return Object.keys(e).length === 0;
   }
 
   async function handleSubmit() {
@@ -60,7 +58,7 @@ export default function AddCustomerModal({ onClose, onSuccess }: Props) {
       .from("customers")
       .select("id")
       .eq("phone", `+63${form.phone.trim()}`)
-      .single();
+      .maybeSingle();
 
     if (existingPhone) {
       setServerError("This phone number is already registered.");
@@ -69,24 +67,23 @@ export default function AddCustomerModal({ onClose, onSuccess }: Props) {
     }
 
     // Check duplicate email
-    if (form.email.trim()) {
-      const { data: existingEmail } = await supabase
-        .from("customers")
-        .select("id")
-        .eq("email", form.email.trim())
-        .single();
+    const { data: existingEmail } = await supabase
+      .from("customers")
+      .select("id")
+      .eq("email", form.email.trim())
+      .maybeSingle();
 
-      if (existingEmail) {
-        setServerError("This email is already registered.");
-        setLoading(false);
-        return;
-      }
+    if (existingEmail) {
+      setServerError("This email is already registered.");
+      setLoading(false);
+      return;
     }
 
     const qr_code = generateQRString(form.first_name, form.last_name);
     const fullName = `${form.first_name} ${form.middle_name ? form.middle_name + " " : ""}${form.last_name}`.trim();
     const today = new Date().toISOString().slice(0, 10);
     const expiry = addOneYear(today);
+
     const { data, error } = await supabase.from("customers").insert({
       name: fullName,
       first_name: form.first_name.trim(),
@@ -104,6 +101,7 @@ export default function AddCustomerModal({ onClose, onSuccess }: Props) {
       password_changed: false,
       birthdate: form.birthdate || null,
       gender: form.gender === "Others" ? form.gender_other : form.gender || null,
+      created_by_staff: true,
     }).select().single();
 
     if (error) {
@@ -111,17 +109,16 @@ export default function AddCustomerModal({ onClose, onSuccess }: Props) {
       setLoading(false);
       return;
     }
-    // Create auth account if email provided
-    if (form.email.trim()) {
-      const res = await fetch("/api/create-customer-auth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: form.email.trim(), customerId: data.id }),
-      });
-      const authResult = await res.json();
-      if (authResult.tempPassword) {
-        setTempPassword(authResult.tempPassword);
-      }
+
+    // Create auth account
+    const res = await fetch("/api/create-customer-auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: form.email.trim(), customerId: data.id }),
+    });
+    const authResult = await res.json();
+    if (authResult.tempPassword) {
+      setTempPassword(authResult.tempPassword);
     }
 
     const QRCode = await import("qrcode");
@@ -214,7 +211,7 @@ export default function AddCustomerModal({ onClose, onSuccess }: Props) {
             </div>
           )}
 
-          {/* Name fields */}
+          {/* Name */}
           <div>
             <p className="text-xs font-bold uppercase tracking-widest mb-3 pb-2"
               style={{ color: "var(--warm-light)", borderBottom: "1px solid var(--border)" }}>Name</p>
@@ -222,23 +219,22 @@ export default function AddCustomerModal({ onClose, onSuccess }: Props) {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="field-label">First Name *</label>
-                  <input className="input-field" placeholder="Dave Paul"
+                  <input className="input-field" placeholder="Juan"
                     value={form.first_name} onChange={(e) => setForm({ ...form, first_name: e.target.value })} />
                   {errors.first_name && <p className="text-xs mt-1" style={{ color: "var(--red)" }}>{errors.first_name}</p>}
                 </div>
                 <div>
                   <label className="field-label">Middle Name</label>
-                  <input className="input-field" placeholder="Bading"
+                  <input className="input-field" placeholder="Santos"
                     value={form.middle_name} onChange={(e) => setForm({ ...form, middle_name: e.target.value })} />
                 </div>
               </div>
               <div>
                 <label className="field-label">Last Name *</label>
-                <input className="input-field" placeholder="Opren"
+                <input className="input-field" placeholder="Dela Cruz"
                   value={form.last_name} onChange={(e) => setForm({ ...form, last_name: e.target.value })} />
                 {errors.last_name && <p className="text-xs mt-1" style={{ color: "var(--red)" }}>{errors.last_name}</p>}
               </div>
-              {/* Preview */}
               {(form.first_name || form.last_name) && (
                 <p className="text-xs" style={{ color: "var(--text-muted)" }}>
                   Display: <span style={{ color: "var(--warm-light)", fontWeight: 600 }}>
@@ -269,7 +265,7 @@ export default function AddCustomerModal({ onClose, onSuccess }: Props) {
                 {errors.phone && <p className="text-xs mt-1" style={{ color: "var(--red)" }}>{errors.phone}</p>}
               </div>
               <div>
-                <label className="field-label">Email Address</label>
+                <label className="field-label">Email Address *</label>
                 <input className="input-field" placeholder="juan@email.com" type="email"
                   value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
                 {errors.email && <p className="text-xs mt-1" style={{ color: "var(--red)" }}>{errors.email}</p>}
@@ -282,36 +278,37 @@ export default function AddCustomerModal({ onClose, onSuccess }: Props) {
               </div>
             </div>
           </div>
-            
+
           {/* Personal Info */}
-          <div style={{ background: "#FFF", borderRadius: 12, border: "1px solid #E5E5E5", padding: 20, marginBottom: 20 }}>
-          <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#888", marginBottom: 14 }}>Personal Info</p>
-          <div style={{ marginBottom: 14 }}>
-            <label style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "#888", display: "block", marginBottom: 4 }}>Birthdate</label>
-            <input type="date"
-              style={{ width: "100%", padding: "9px 11px", borderRadius: 6, border: "1px solid #DDD", fontSize: 13, fontFamily: "Poppins, sans-serif", outline: "none" }}
-              value={form.birthdate} onChange={(e) => setForm({ ...form, birthdate: e.target.value })} />
-              {errors.birthdate && <p style={{ fontSize: 10, color: "#DC2626", marginTop: 3 }}>{errors.birthdate}</p>}
-          </div>
           <div>
-            <label style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "#888", display: "block", marginBottom: 4 }}>Gender</label>
-            <select style={{ width: "100%", padding: "9px 11px", borderRadius: 6, border: "1px solid #DDD", fontSize: 13, fontFamily: "Poppins, sans-serif", outline: "none", background: "#FFF" }}
-              value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value, gender_other: "" })}>
-              <option value="" disabled>Select gender</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-              <option value="Prefer not to say">Prefer not to say</option>
-              <option value="Others">Others</option>
-            </select>
-            {form.gender === "Others" && (
-              <input style={{ width: "100%", padding: "9px 11px", borderRadius: 6, border: "1px solid #DDD", fontSize: 13, fontFamily: "Poppins, sans-serif", outline: "none", marginTop: 8 }}
-                placeholder="Please specify your gender"
-                value={form.gender_other} onChange={(e) => setForm({ ...form, gender_other: e.target.value })} />
-            )}
-            {errors.gender && <p style={{ fontSize: 10, color: "#DC2626", marginTop: 3 }}>{errors.gender}</p>}  
-            {errors.gender_other && <p style={{ fontSize: 10, color: "#DC2626", marginTop: 3 }}>{errors.gender_other}</p>}  
+            <p className="text-xs font-bold uppercase tracking-widest mb-3 pb-2"
+              style={{ color: "var(--warm-light)", borderBottom: "1px solid var(--border)" }}>Personal Info</p>
+            <div className="space-y-3">
+              <div>
+                <label className="field-label">Birthdate *</label>
+                <input type="date" className="input-field"
+                  value={form.birthdate} onChange={(e) => setForm({ ...form, birthdate: e.target.value })} />
+                {errors.birthdate && <p className="text-xs mt-1" style={{ color: "var(--red)" }}>{errors.birthdate}</p>}
+              </div>
+              <div>
+                <label className="field-label">Gender *</label>
+                <select className="input-field"
+                  value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value, gender_other: "" })}>
+                  <option value="" disabled>Select gender</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Prefer not to say">Prefer not to say</option>
+                  <option value="Others">Others</option>
+                </select>
+                {errors.gender && <p className="text-xs mt-1" style={{ color: "var(--red)" }}>{errors.gender}</p>}
+                {form.gender === "Others" && (
+                  <input className="input-field mt-2" placeholder="Please specify your gender"
+                    value={form.gender_other} onChange={(e) => setForm({ ...form, gender_other: e.target.value })} />
+                )}
+                {errors.gender_other && <p className="text-xs mt-1" style={{ color: "var(--red)" }}>{errors.gender_other}</p>}
+              </div>
+            </div>
           </div>
-        </div>
 
           {/* Membership */}
           <div>

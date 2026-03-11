@@ -1,15 +1,39 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { supabaseBrowser as supabase } from "@/lib/supabase";
 
 export default function KaPoepleLanding() {
   const [scrolled, setScrolled] = useState(false);
+  const [customer, setCustomer] = useState<{ first_name: string } | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
     window.addEventListener("scroll", onScroll);
+
+    async function checkAuth() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase
+          .from("customers")
+          .select("first_name")
+          .eq("auth_id", user.id)
+          .maybeSingle();
+        if (data) setCustomer(data);
+      }
+    }
+    checkAuth();
+
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    setCustomer(null);
+    router.refresh();
+  }
 
   const menu = [
     { name: "Brewed Coffee", price: "₱89", desc: "Classic drip, dark roast", tag: "BESTSELLER" },
@@ -51,7 +75,8 @@ export default function KaPoepleLanding() {
 
         <div className="hidden md:flex" style={{ gap: 32, alignItems: "center" }}>
           {["Menu", "Membership", "About"].map((l) => (
-            <a key={l} href={`#${l.toLowerCase()}`} style={{ fontSize: 12, fontWeight: 600, color: "#666", textDecoration: "none", letterSpacing: "0.06em", textTransform: "uppercase", transition: "color 0.2s" }}
+            <a key={l} href={`#${l.toLowerCase()}`}
+              style={{ fontSize: 12, fontWeight: 600, color: "#666", textDecoration: "none", letterSpacing: "0.06em", textTransform: "uppercase", transition: "color 0.2s" }}
               onMouseEnter={(e) => (e.currentTarget.style.color = "#3B1F00")}
               onMouseLeave={(e) => (e.currentTarget.style.color = "#666")}>
               {l}
@@ -59,17 +84,36 @@ export default function KaPoepleLanding() {
           ))}
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <Link href="/login" style={{
-            textDecoration: "none", fontSize: 12, fontWeight: 700,
-            color: "#0A0A0A", padding: "8px 18px", borderRadius: 6,
-            border: "1px solid rgba(0,0,0,0.15)", transition: "all 0.2s",
-          }}>Log In</Link>
-          <Link href="/signup" style={{
-            textDecoration: "none", fontSize: 12, fontWeight: 700,
-            color: "#FFF", padding: "8px 18px", borderRadius: 6,
-            background: "#3B1F00",
-          }}>Sign Up</Link>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 160, justifyContent: "flex-end" }}>
+          {customer ? (
+            <>
+              <Link href="/me" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#3B1F00", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span style={{ color: "#FFF", fontWeight: 800, fontSize: 13 }}>
+                    {customer.first_name?.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+                <span style={{ fontSize: 13, fontWeight: 600, color: "#0A0A0A" }}>{customer.first_name}</span>
+              </Link>
+              <button onClick={handleLogout}
+                style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "#888", background: "transparent", border: "1px solid rgba(0,0,0,0.15)", borderRadius: 6, padding: "6px 12px", cursor: "pointer", fontFamily: "Poppins, sans-serif" }}>
+                Sign Out
+              </button>
+            </>
+          ) : (
+            <>
+              <Link href="/login" style={{
+                textDecoration: "none", fontSize: 12, fontWeight: 700,
+                color: "#0A0A0A", padding: "8px 18px", borderRadius: 6,
+                border: "1px solid rgba(0,0,0,0.15)",
+              }}>Log In</Link>
+              <Link href="/signup" style={{
+                textDecoration: "none", fontSize: 12, fontWeight: 700,
+                color: "#FFF", padding: "8px 18px", borderRadius: 6,
+                background: "#3B1F00",
+              }}>Sign Up</Link>
+            </>
+          )}
         </div>
       </nav>
 
@@ -145,7 +189,7 @@ export default function KaPoepleLanding() {
             {menu.map((item) => (
               <div key={item.name} style={{
                 background: "#FAFAFA", borderRadius: 12, padding: 24,
-                border: "1px solid #EEEEEE", position: "relative", transition: "all 0.2s",
+                border: "1px solid #EEEEEE", position: "relative",
               }}
                 onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(59,31,0,0.3)"; (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; }}
                 onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "#EEEEEE"; (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; }}>
@@ -242,8 +286,14 @@ export default function KaPoepleLanding() {
           </div>
           <p style={{ fontSize: 12, color: "#555" }}>© 2026 KapéoPle. All rights reserved.</p>
           <div style={{ display: "flex", gap: 24 }}>
-            <Link href="/login" style={{ fontSize: 12, color: "#555", textDecoration: "none", fontWeight: 600 }}>Log In</Link>
-            <Link href="/signup" style={{ fontSize: 12, color: "#C8A882", textDecoration: "none", fontWeight: 600 }}>Sign Up</Link>
+            {customer ? (
+              <Link href="/me" style={{ fontSize: 12, color: "#C8A882", textDecoration: "none", fontWeight: 600 }}>My Account</Link>
+            ) : (
+              <>
+                <Link href="/login" style={{ fontSize: 12, color: "#555", textDecoration: "none", fontWeight: 600 }}>Log In</Link>
+                <Link href="/signup" style={{ fontSize: 12, color: "#C8A882", textDecoration: "none", fontWeight: 600 }}>Sign Up</Link>
+              </>
+            )}
           </div>
         </div>
       </footer>

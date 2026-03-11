@@ -1,9 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
-import { createBrowserClient } from "@supabase/ssr";
 import { useRouter } from "next/navigation";
 import QRCode from "react-qr-code";
 import { supabaseBrowser as supabase } from "@/lib/supabase";
+import Link from "next/link";
 
 type Customer = {
     id: string;
@@ -12,8 +12,8 @@ type Customer = {
     last_name: string;
     email: string;
     phone: string;
-    birthdate: string;
-    gender: string;
+    birthdate: string | null;
+    gender: string | null;
     qr_code: string;
     is_active: boolean;
     payment_status: string;
@@ -21,8 +21,9 @@ type Customer = {
     visit_count: number;
     card_issue_date: string;
     expiry_date: string;
-    access_code: string;
+    access_code: string | null;
     password_changed: boolean | null;
+    created_by_staff: boolean | null;
 };
 
 type Tab = "membership" | "profile" | "password";
@@ -34,38 +35,22 @@ export default function MePage() {
     const [saving, setSaving] = useState(false);
     const [successMsg, setSuccessMsg] = useState("");
     const [errorMsg, setErrorMsg] = useState("");
-
-    // Password change
-    const [currentPassword, setCurrentPassword] = useState("");
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
-
     const router = useRouter();
-
 
     useEffect(() => {
         async function load() {
             const { data: { user } } = await supabase.auth.getUser();
-            console.log("ME page - user:", user?.id);
             if (!user) { router.push("/login"); return; }
 
             const { data: staffData } = await supabase
-                .from("staff")
-                .select("role")
-                .eq("id", user.id)
-                .single();
-
-            console.log("ME page - staffData:", staffData);
+                .from("staff").select("role").eq("id", user.id).maybeSingle();
 
             if (staffData) { router.push("/dashboard"); return; }
 
-            const { data, error } = await supabase
-                .from("customers")
-                .select("*")
-                .eq("auth_id", user.id)
-                .single();
-
-            console.log("ME page - customer:", data, "error:", error);
+            const { data } = await supabase
+                .from("customers").select("*").eq("auth_id", user.id).maybeSingle();
 
             if (!data) { router.push("/login"); return; }
             setCustomer(data);
@@ -81,6 +66,7 @@ export default function MePage() {
     }
 
     async function handleChangePassword() {
+        if (!customer) return;
         setSuccessMsg("");
         setErrorMsg("");
 
@@ -97,19 +83,24 @@ export default function MePage() {
         const { error } = await supabase.auth.updateUser({ password: newPassword });
 
         if (error) {
-            setErrorMsg("Failed to update password. Please try again.");
+            setErrorMsg(error.status === 422
+                ? "New password must be different from your current password."
+                : "Failed to update password. Please try again."
+            );
             setSaving(false);
             return;
         }
 
-        // Mark password as changed and activate account
-        if (customer && !customer.password_changed) {
-            await supabase
-                .from("customers")
+        if (customer.created_by_staff && !customer.password_changed) {
+            await supabase.from("customers")
                 .update({ password_changed: true, is_active: true, free_coffee: true })
                 .eq("id", customer.id);
-
             setCustomer({ ...customer, password_changed: true, is_active: true, free_coffee: true });
+        } else {
+            await supabase.from("customers")
+                .update({ password_changed: true })
+                .eq("id", customer.id);
+            setCustomer({ ...customer, password_changed: true });
         }
 
         setSuccessMsg("Password updated!");
@@ -122,6 +113,8 @@ export default function MePage() {
         if (!customer) return { label: "Unknown", color: "#888", bg: "#F5F5F5" };
         if (customer.payment_status === "submitted") return { label: "Pending Approval", color: "#92400E", bg: "#FFF7ED" };
         if (customer.payment_status === "rejected") return { label: "Rejected", color: "#DC2626", bg: "#FEF2F2" };
+        const isExpired = customer.expiry_date ? new Date(customer.expiry_date) < new Date() : false;
+        if (isExpired) return { label: "Expired", color: "#DC2626", bg: "#FEF2F2" };
         if (customer.is_active) return { label: "Active", color: "#166534", bg: "#F0FDF4" };
         return { label: "Inactive", color: "#555", bg: "#F5F5F5" };
     }
@@ -135,25 +128,37 @@ export default function MePage() {
     }
 
     if (!customer) return null;
+
     const status = getStatus();
+    const isExpired = customer.expiry_date ? new Date(customer.expiry_date) < new Date() : false;
 
     return (
         <main style={{ minHeight: "100vh", background: "#FAFAFA", fontFamily: "Poppins, sans-serif" }}>
 
             {/* ── Top Nav ── */}
-            <nav style={{ background: "#FFF", borderBottom: "1px solid #E5E5E5", padding: "0 24px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 40 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <div style={{ width: 30, height: 30, background: "#0A0A0A", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <span style={{ color: "#FFF", fontWeight: 900, fontSize: 16, lineHeight: 1 }}>!</span>
+            <nav style={{ background: "#FFF", borderBottom: "1px solid #E5E5E5", padding: "0 20px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 40 }}>
+                <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{ width: 32, height: 32, background: "#3B1F00", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <span style={{ color: "#FFF", fontWeight: 900, fontSize: 18, lineHeight: 1 }}>!</span>
                     </div>
-                    <span style={{ fontWeight: 800, fontSize: 16, color: "#0A0A0A", letterSpacing: "-0.02em" }}>
-                        Kape<span style={{ color: "#3B1F00" }}>Guid</span>
+                    <span style={{ fontWeight: 800, fontSize: 18, color: "#0A0A0A", letterSpacing: "-0.02em" }}>
+                        kapé<span style={{ color: "#3B1F00" }}>ople.</span>
                     </span>
+                </Link>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#3B1F00", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                            <span style={{ color: "#FFF", fontWeight: 800, fontSize: 13 }}>
+                                {customer.first_name?.charAt(0).toUpperCase()}
+                            </span>
+                        </div>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: "#0A0A0A" }}>{customer.first_name}</span>
+                    </div>
+                    <button onClick={handleLogout}
+                        style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "#888", background: "transparent", border: "1px solid #E5E5E5", borderRadius: 6, padding: "6px 12px", cursor: "pointer", fontFamily: "Poppins, sans-serif" }}>
+                        Sign Out
+                    </button>
                 </div>
-                <button onClick={handleLogout}
-                    style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "#888", background: "transparent", border: "1px solid #E5E5E5", borderRadius: 6, padding: "6px 12px", cursor: "pointer", fontFamily: "Poppins, sans-serif" }}>
-                    Sign Out
-                </button>
             </nav>
 
             <div style={{ maxWidth: 480, margin: "0 auto", padding: "32px 20px" }}>
@@ -174,22 +179,17 @@ export default function MePage() {
 
                 {/* ── Tabs ── */}
                 <div style={{ display: "flex", background: "#F0F0F0", borderRadius: 8, padding: 4, marginBottom: 24 }}>
-                    {([
-                        { key: "membership", label: "Membership" },
-                        { key: "profile", label: "Profile" },
-                        { key: "password", label: "Password" },
-                    ] as { key: Tab; label: string }[]).map((t) => (
-                        <button key={t.key} onClick={() => { setTab(t.key); setSuccessMsg(""); setErrorMsg(""); }}
+                    {(["membership", "profile", "password"] as Tab[]).map((t) => (
+                        <button key={t} onClick={() => setTab(t)}
                             style={{
                                 flex: 1, padding: "8px 4px", borderRadius: 6, border: "none",
                                 fontSize: 11, fontWeight: 700, cursor: "pointer",
                                 fontFamily: "Poppins, sans-serif",
-                                background: tab === t.key ? "#FFF" : "transparent",
-                                color: tab === t.key ? "#0A0A0A" : "#888",
-                                boxShadow: tab === t.key ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
-                                transition: "all 0.2s",
+                                background: tab === t ? "#FFF" : "transparent",
+                                color: tab === t ? "#0A0A0A" : "#888",
+                                boxShadow: tab === t ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
                             }}>
-                            {t.label}
+                            {t.charAt(0).toUpperCase() + t.slice(1)}
                         </button>
                     ))}
                 </div>
@@ -205,23 +205,45 @@ export default function MePage() {
                                 <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#888", marginTop: 4 }}>Total Visits</div>
                             </div>
                             <div style={{
-                                background: customer.payment_status === "submitted" ? "#FFF7ED" : customer.free_coffee ? "#F0FDF4" : "#F5F5F5",
-                                border: `1px solid ${customer.payment_status === "submitted" ? "#FED7AA" : customer.free_coffee ? "#86EFAC" : "#E5E5E5"}`,
+                                background: customer.payment_status === "submitted" ? "#FFF7ED"
+                                    : customer.payment_status === "rejected" ? "#FEF2F2"
+                                    : isExpired ? "#FEF2F2"
+                                    : !customer.is_active ? "#F5F5F5"
+                                    : customer.free_coffee ? "#F0FDF4" : "#F5F5F5",
+                                border: `1px solid ${
+                                    customer.payment_status === "submitted" ? "#FED7AA"
+                                    : customer.payment_status === "rejected" ? "#FECACA"
+                                    : isExpired ? "#FECACA"
+                                    : !customer.is_active ? "#E5E5E5"
+                                    : customer.free_coffee ? "#86EFAC" : "#E5E5E5"}`,
                                 borderRadius: 12, padding: 16, textAlign: "center"
                             }}>
                                 <div style={{ fontSize: 28 }}>
-                                    {customer.payment_status === "submitted" ? "⏳" : customer.free_coffee ? "☕" : "—"}
+                                    {customer.payment_status === "submitted" ? "⏳"
+                                        : customer.payment_status === "rejected" ? "❌"
+                                        : isExpired ? "❌"
+                                        : !customer.is_active ? "—"
+                                        : customer.free_coffee ? "☕" : "—"}
                                 </div>
                                 <div style={{
                                     fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 4,
-                                    color: customer.payment_status === "submitted" ? "#92400E" : customer.free_coffee ? "#166534" : "#888"
+                                    color: customer.payment_status === "submitted" ? "#92400E"
+                                        : customer.payment_status === "rejected" ? "#DC2626"
+                                        : isExpired ? "#DC2626"
+                                        : !customer.is_active ? "#888"
+                                        : customer.free_coffee ? "#166534" : "#888"
                                 }}>
-                                    {customer.payment_status === "submitted" ? "Eligible Once Approved" : customer.free_coffee ? "Free Coffee!" : "No Free Coffee"}
+                                    {customer.payment_status === "submitted" ? "Pending Approval"
+                                        : customer.payment_status === "rejected" ? "Registration Rejected"
+                                        : isExpired ? "Membership Expired"
+                                        : !customer.is_active ? "Account Inactive"
+                                        : customer.free_coffee ? "Free Coffee!" : "No Free Coffee"}
                                 </div>
                             </div>
                         </div>
 
-                        {!customer.password_changed && !customer.is_active && customer.payment_status !== "submitted" && (
+                        {/* Change password banner — staff-created accounts only */}
+                        {customer.created_by_staff && !customer.password_changed && customer.payment_status === "approved" && (
                             <div style={{ background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 12, padding: 16, textAlign: "center" }}>
                                 <p style={{ fontSize: 13, fontWeight: 700, color: "#1D4ED8" }}>🔐 One more step!</p>
                                 <p style={{ fontSize: 12, color: "#1E40AF", marginTop: 4, lineHeight: 1.6 }}>
@@ -237,16 +259,24 @@ export default function MePage() {
                         {/* Card details */}
                         <div style={{ background: "#FFF", border: "1px solid #E5E5E5", borderRadius: 12, padding: 20 }}>
                             <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#888", marginBottom: 14 }}>Membership Card</p>
-                            {[
-                                ["Member Since", customer.card_issue_date ? new Date(customer.card_issue_date).toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" }) : "—"],
-                                ["Valid Until", customer.expiry_date ? new Date(customer.expiry_date).toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" }) : "—"],
-                                ["Access Code", customer.access_code ?? "—"],
-                            ].map(([label, value]) => (
-                                <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: 10, marginBottom: 10, borderBottom: "1px solid #F5F5F5" }}>
-                                    <span style={{ fontSize: 12, color: "#888", fontWeight: 600 }}>{label}</span>
-                                    <span style={{ fontSize: 13, color: "#0A0A0A", fontWeight: 700 }}>{value}</span>
-                                </div>
-                            ))}
+                            {customer.payment_status !== "approved" ? (
+                                <p style={{ fontSize: 12, color: "#888", textAlign: "center", padding: "10px 0" }}>
+                                    Card details will be available once your membership is approved.
+                                </p>
+                            ) : (
+                                <>
+                                    {[
+                                        ["Member Since", customer.card_issue_date ? new Date(customer.card_issue_date).toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" }) : "—"],
+                                        ["Valid Until", customer.expiry_date ? new Date(customer.expiry_date).toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" }) : "—"],
+                                        ["Access Code", customer.access_code ?? "—"],
+                                    ].map(([label, value]) => (
+                                        <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: 10, marginBottom: 10, borderBottom: "1px solid #F5F5F5" }}>
+                                            <span style={{ fontSize: 12, color: "#888", fontWeight: 600 }}>{label}</span>
+                                            <span style={{ fontSize: 13, color: "#0A0A0A", fontWeight: 700 }}>{value}</span>
+                                        </div>
+                                    ))}
+                                </>
+                            )}
                         </div>
 
                         {/* QR Code */}

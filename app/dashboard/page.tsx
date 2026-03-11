@@ -179,7 +179,7 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {topCustomers.map((c, i) => (
+                  {topCustomers.filter(c => c.is_active).map((c, i) => (
                     <div key={c.id}
                       className="flex items-center gap-3 p-2.5 rounded transition-all cursor-pointer group"
                       style={{ background: "var(--surface2)", border: "1px solid var(--border)" }}

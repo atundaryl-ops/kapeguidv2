@@ -106,9 +106,12 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
   }
 
   async function toggleActive() {
-    await supabase.from("customers").update({ is_active: !customer.is_active }).eq("id", customer.id);
-    onUpdate();
-  }
+  await supabase.from("customers").update({ 
+    is_active: !customer.is_active,
+    ...((!customer.is_active) && { payment_status: "approved" }), // ← set approved when activating
+  }).eq("id", customer.id);
+  onUpdate();
+}
 
   async function handleRenew() {
     if (!confirm(`Renew ${getDisplayName(customer)}'s card? This sets today as the new issue date + 1 year expiry.`)) return;
@@ -360,8 +363,11 @@ export default function CustomerDetailModal({ customer, onClose, onUpdate }: Pro
                                       : "✓ Redeemed This Month"}
                           </span>
                         </div>
-                      
-              
+                        {customer.free_coffee && !redeemConfirm && !isExpired && customer.payment_status !== "submitted" && customer.payment_status !== "rejected" && customer.is_active && (<button className="btn" style={{ padding: "4px 10px", fontSize: 10, background: "rgba(242,201,76,0.1)", color: "var(--amber)", border: "1px solid rgba(242,201,76,0.3)" }}
+                          onClick={() => setRedeemConfirm(true)}>
+                          Redeem ☕
+                        </button>
+                        )}
                       </div>
                     </div>
 

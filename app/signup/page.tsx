@@ -54,7 +54,7 @@ export default function SignupPage() {
       .from("customers")
       .select("id")
       .eq("phone", `+63${form.phone.trim()}`)
-      .single();
+      .maybeSingle();
 
     if (existingPhone) {
       setServerError("This phone number is already registered. Please use a different one.");
@@ -85,7 +85,7 @@ export default function SignupPage() {
       .from("customers")
       .select("id")
       .eq("email", form.email.trim())
-      .single();
+      .maybeSingle();
 
     if (existing) {
       setServerError("This email is already registered. Please log in instead.");
