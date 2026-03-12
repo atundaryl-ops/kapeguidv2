@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser as supabase } from "@/lib/supabase";
+import MenuSection from "@/components/MenuSection";
 
 export default function KaPoepleLanding() {
   const [scrolled, setScrolled] = useState(false);
@@ -34,15 +35,6 @@ export default function KaPoepleLanding() {
     setCustomer(null);
     router.refresh();
   }
-
-  const menu = [
-    { name: "Brewed Coffee", price: "₱89", desc: "Classic drip, dark roast", tag: "BESTSELLER" },
-    { name: "Kapé Latte", price: "₱120", desc: "Espresso & steamed milk", tag: null },
-    { name: "Brown Sugar Milk Tea", price: "₱110", desc: "Tiger stripes & pearls", tag: "NEW" },
-    { name: "Dirty Matcha", price: "₱130", desc: "Espresso shot over matcha", tag: null },
-    { name: "Iced Americano", price: "₱95", desc: "Bold & refreshing", tag: null },
-    { name: "Kapé Frappe", price: "₱140", desc: "Blended coffee delight", tag: "NEW" },
-  ];
 
   const benefits = [
     { icon: "☕", title: "Free Coffee Monthly", desc: "Every member gets one free coffee every month, no strings attached." },
@@ -177,39 +169,7 @@ export default function KaPoepleLanding() {
       </section>
 
       {/* ── Menu ── */}
-      <section id="menu" style={{ padding: "100px 24px", background: "#FFF" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 64 }}>
-            <p style={{ fontSize: 11, fontWeight: 700, color: "#3B1F00", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 12 }}>What We Serve</p>
-            <h2 style={{ fontSize: "clamp(32px, 5vw, 52px)", fontWeight: 900, color: "#0A0A0A", letterSpacing: "-0.02em", lineHeight: 1.1 }}>
-              Crafted with love,<br />served with care.
-            </h2>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 20 }}>
-            {menu.map((item) => (
-              <div key={item.name} style={{
-                background: "#FAFAFA", borderRadius: 12, padding: 24,
-                border: "1px solid #EEEEEE", position: "relative",
-              }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(59,31,0,0.3)"; (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "#EEEEEE"; (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; }}>
-                {item.tag && (
-                  <span style={{
-                    position: "absolute", top: 16, right: 16, fontSize: 9, fontWeight: 700,
-                    letterSpacing: "0.1em", padding: "3px 8px", borderRadius: 99,
-                    background: item.tag === "NEW" ? "#3B1F00" : "rgba(59,31,0,0.08)",
-                    color: item.tag === "NEW" ? "#FFF" : "#3B1F00",
-                  }}>{item.tag}</span>
-                )}
-                <div style={{ fontSize: 32, marginBottom: 12 }}>☕</div>
-                <h3 style={{ fontSize: 16, fontWeight: 800, color: "#0A0A0A", marginBottom: 4 }}>{item.name}</h3>
-                <p style={{ fontSize: 13, color: "#888", marginBottom: 16 }}>{item.desc}</p>
-                <div style={{ fontSize: 20, fontWeight: 900, color: "#3B1F00" }}>{item.price}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <MenuSection />
 
       {/* ── Membership ── */}
       <section id="membership" style={{ padding: "100px 24px", background: "#0A0A0A", position: "relative", overflow: "hidden" }}>

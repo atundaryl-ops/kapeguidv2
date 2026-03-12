@@ -21,59 +21,43 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
   const { pathname } = request.nextUrl;
 
-  const staffRoutes = ["/dashboard", "/customers", "/scan", "/checkins", "/settings"];
-  const customerRoutes = ["/me"];
-  const isStaffRoute = staffRoutes.some((route) => pathname.startsWith(route));
-  const isCustomerRoute = customerRoutes.some((route) => pathname.startsWith(route));
+  // Skip middleware for public routes entirely
+  const publicRoutes = ["/", "/login", "/signup"];
+  if (publicRoutes.includes(pathname)) {
+    // Only redirect away from login if already logged in
+    if (pathname === "/login") {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: staffData } = await supabase
+          .from("staff").select("role").eq("id", user.id).maybeSingle();
+        return NextResponse.redirect(
+          new URL(staffData ? "/dashboard" : "/me", request.url)
+        );
+      }
+    }
+    return supabaseResponse;
+  }
 
-  // Not logged in — redirect to login
-  if ((isStaffRoute || isCustomerRoute) && !user) {
+  const staffRoutes = ["/dashboard", "/customers", "/scan", "/checkins", "/settings", "/menu"];
+  const customerRoutes = ["/me"];
+  const isStaffRoute = staffRoutes.some((r) => pathname.startsWith(r));
+  const isCustomerRoute = customerRoutes.some((r) => pathname.startsWith(r));
+
+  // Not a protected route — let it through
+  if (!isStaffRoute && !isCustomerRoute) {
+    return supabaseResponse;
+  }
+
+  // Get user once
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // Not logged in
+  if (!user) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  if (user && isStaffRoute) {
-    // Check if user is actually staff
-    const { data: staffData } = await supabase
-      .from("staff")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    // Not staff — redirect to /me
-    if (!staffData) {
-      return NextResponse.redirect(new URL("/me", request.url));
-    }
-  }
-
-  if (user && isCustomerRoute) {
-    // Check if user is staff trying to access /me
-    const { data: staffData } = await supabase
-      .from("staff")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    // Is staff — redirect to /dashboard
-    if (staffData) {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
-    }
-  }
-
-  // Redirect away from login if already authenticated
-  if ((pathname === "/login") && user) {
-    const { data: staffData } = await supabase
-      .from("staff")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    return NextResponse.redirect(
-      new URL(staffData ? "/dashboard" : "/me", request.url)
-    );
-  }
 
   return supabaseResponse;
 }

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import QRCode from "react-qr-code";
 import { supabaseBrowser as supabase } from "@/lib/supabase";
+import { useAuth } from "@/lib/auth-context";
 import Link from "next/link";
 
 type Customer = {
@@ -29,6 +30,7 @@ type Customer = {
 type Tab = "membership" | "profile" | "password";
 
 export default function MePage() {
+    const { user, loading: authLoading, logout } = useAuth();
     const [customer, setCustomer] = useState<Customer | null>(null);
     const [loading, setLoading] = useState(true);
     const [tab, setTab] = useState<Tab>("membership");
@@ -40,27 +42,23 @@ export default function MePage() {
     const router = useRouter();
 
     useEffect(() => {
-        async function load() {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) { router.push("/login"); return; }
+        if (authLoading) return;
+        if (!user) { router.push("/login"); return; }
+        if (user.role === "staff") { router.push("/dashboard"); return; }
 
-            const { data: staffData } = await supabase
-                .from("staff").select("role").eq("id", user.id).maybeSingle();
-
-            if (staffData) { router.push("/dashboard"); return; }
-
+        // Fetch full customer data using customer_id from auth context
+        async function loadCustomer() {
             const { data } = await supabase
-                .from("customers").select("*").eq("auth_id", user.id).maybeSingle();
-
+                .from("customers").select("*").eq("id", user!.customer_id).maybeSingle();
             if (!data) { router.push("/login"); return; }
             setCustomer(data);
             setLoading(false);
         }
-        load();
-    }, []);
+        loadCustomer();
+    }, [user, authLoading]);
 
     async function handleLogout() {
-        await supabase.auth.signOut();
+        await logout();
         router.push("/");
         router.refresh();
     }
@@ -119,7 +117,7 @@ export default function MePage() {
         return { label: "Inactive", color: "#555", bg: "#F5F5F5" };
     }
 
-    if (loading) {
+    if (authLoading || loading) {
         return (
             <main style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#FAFAFA", fontFamily: "Poppins, sans-serif" }}>
                 <p style={{ color: "#888", fontSize: 14 }}>Loading...</p>

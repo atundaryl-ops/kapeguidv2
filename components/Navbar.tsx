@@ -66,28 +66,49 @@ export default function Navbar() {
 
   const links = [
     {
-      href: "/dashboard", label: "Dashboard",
-      icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" />
-        <rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
-      </svg>,
+      href: "/dashboard",
+      label: "Dashboard",
+      icon: (
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" />
+          <rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
+        </svg>
+      ),
       badge: 0,
     },
     {
-      href: "/scan", label: "Scan",
-      icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M4 7V4h3M17 4h3v3M4 17v3h3M17 20h3v-3" />
-        <rect x="8" y="8" width="8" height="8" />
-      </svg>,
+      href: "/scan",
+      label: "Scan",
+      icon: (
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M4 7V4h3M17 4h3v3M4 17v3h3M17 20h3v-3" />
+          <rect x="8" y="8" width="8" height="8" />
+        </svg>
+      ),
       badge: 0,
     },
     {
-      href: "/customers", label: "Customers",
-      icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <circle cx="9" cy="7" r="4" />
-        <path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" />
-        <path d="M16 3.13a4 4 0 0 1 0 7.75M21 21v-2a4 4 0 0 0-3-3.87" />
-      </svg>,
+      href: "/menu",
+      label: "Menu",
+      icon: (
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
+          <rect x="9" y="3" width="6" height="4" rx="1" />
+          <path d="M9 12h6M9 16h4" />
+        </svg>
+      ),
+      badge: 0,
+    },
+    {
+      href: "/customers",
+      label: "Customers",
+      icon: (
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <circle cx="9" cy="7" r="4" />
+          <path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75M21 21v-2a4 4 0 0 0-3-3.87" />
+        </svg>
+      ),
       badge: pendingCount,
     },
   ];
@@ -132,7 +153,6 @@ export default function Navbar() {
 
           {staffInfo && (
             <div style={{ position: "relative" }}>
-              {/* Avatar button */}
               <div onClick={() => setProfileOpen(!profileOpen)}
                 style={{
                   width: 32, height: 32, borderRadius: "50%", background: "var(--warm)",
@@ -144,13 +164,10 @@ export default function Navbar() {
                 </span>
               </div>
 
-              {/* Dropdown */}
               {profileOpen && (
                 <>
-                  {/* Backdrop to close on outside click */}
                   <div onClick={() => setProfileOpen(false)}
                     style={{ position: "fixed", inset: 0, zIndex: 99 }} />
-
                   <div style={{
                     position: "absolute", top: 38, right: 0,
                     background: "var(--surface)", border: "1px solid var(--border2)",
@@ -174,9 +191,6 @@ export default function Navbar() {
               )}
             </div>
           )}
-
-
-
         </div>
       </div>
     </nav>
