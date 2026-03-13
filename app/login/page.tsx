@@ -37,7 +37,7 @@ export default function LoginPage() {
         if (staffData) {
             router.push("/dashboard");
         } else {
-            router.push("/me");
+            router.push("/home");
         }
         router.refresh();
 

@@ -5,6 +5,7 @@ import QRCode from "react-qr-code";
 import { supabaseBrowser as supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 import Link from "next/link";
+import s from "./page.module.css";
 
 type Customer = {
     id: string;
@@ -46,7 +47,6 @@ export default function MePage() {
         if (!user) { router.push("/login"); return; }
         if (user.role === "staff") { router.push("/dashboard"); return; }
 
-        // Fetch full customer data using customer_id from auth context
         async function loadCustomer() {
             const { data } = await supabase
                 .from("customers").select("*").eq("id", user!.customer_id).maybeSingle();
@@ -119,8 +119,8 @@ export default function MePage() {
 
     if (authLoading || loading) {
         return (
-            <main style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#FAFAFA", fontFamily: "Poppins, sans-serif" }}>
-                <p style={{ color: "#888", fontSize: 14 }}>Loading...</p>
+            <main className={s.loadingMain}>
+                <p className={s.loadingText}>Loading...</p>
             </main>
         );
     }
@@ -130,63 +130,86 @@ export default function MePage() {
     const status = getStatus();
     const isExpired = customer.expiry_date ? new Date(customer.expiry_date) < new Date() : false;
 
+    // Dynamic status card styles (driven by runtime data, kept inline)
+    const statusCardBg = customer.payment_status === "submitted" ? "#FFF7ED"
+        : customer.payment_status === "rejected" ? "#FEF2F2"
+        : isExpired ? "#FEF2F2"
+        : !customer.is_active ? "#F5F5F5"
+        : customer.free_coffee ? "#F0FDF4" : "#F5F5F5";
+
+    const statusCardBorder = customer.payment_status === "submitted" ? "#FED7AA"
+        : customer.payment_status === "rejected" ? "#FECACA"
+        : isExpired ? "#FECACA"
+        : !customer.is_active ? "#E5E5E5"
+        : customer.free_coffee ? "#86EFAC" : "#E5E5E5";
+
+    const statusCardTextColor = customer.payment_status === "submitted" ? "#92400E"
+        : customer.payment_status === "rejected" ? "#DC2626"
+        : isExpired ? "#DC2626"
+        : !customer.is_active ? "#888"
+        : customer.free_coffee ? "#166534" : "#888";
+
+    const statusCardText = customer.payment_status === "submitted" ? "Pending Approval"
+        : customer.payment_status === "rejected" ? "Registration Rejected"
+        : isExpired ? "Membership Expired"
+        : !customer.is_active ? "Account Inactive"
+        : customer.free_coffee ? "Free Coffee!" : "No Free Coffee";
+
+    const statusCardIcon = customer.payment_status === "submitted" ? "⏳"
+        : customer.payment_status === "rejected" ? "❌"
+        : isExpired ? "❌"
+        : !customer.is_active ? "—"
+        : customer.free_coffee ? "☕" : "—";
+
     return (
-        <main style={{ minHeight: "100vh", background: "#FAFAFA", fontFamily: "Poppins, sans-serif" }}>
+        <main className={s.main}>
 
             {/* ── Top Nav ── */}
-            <nav style={{ background: "#FFF", borderBottom: "1px solid #E5E5E5", padding: "0 20px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 40 }}>
-                <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 10 }}>
-                    <div style={{ width: 32, height: 32, background: "#3B1F00", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <span style={{ color: "#FFF", fontWeight: 900, fontSize: 18, lineHeight: 1 }}>!</span>
+            <nav className={s.nav}>
+                <Link href="/home" className={s.navLogo}>
+                    <div className={s.navLogoIcon}>
+                        <span className={s.navLogoIconText}>!</span>
                     </div>
-                    <span style={{ fontWeight: 800, fontSize: 18, color: "#0A0A0A", letterSpacing: "-0.02em" }}>
-                        kapé<span style={{ color: "#3B1F00" }}>ople.</span>
+                    <span className={s.navLogoText}>
+                        kapé<span className={s.navLogoAccent}>ople.</span>
                     </span>
                 </Link>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#3B1F00", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                            <span style={{ color: "#FFF", fontWeight: 800, fontSize: 13 }}>
+                <div className={s.navRight}>
+                    <div className={s.navUser}>
+                        <div className={s.avatar}>
+                            <span className={s.avatarText}>
                                 {customer.first_name?.charAt(0).toUpperCase()}
                             </span>
                         </div>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: "#0A0A0A" }}>{customer.first_name}</span>
+                        <span className={s.navName}>{customer.first_name}</span>
                     </div>
-                    <button onClick={handleLogout}
-                        style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "#888", background: "transparent", border: "1px solid #E5E5E5", borderRadius: 6, padding: "6px 12px", cursor: "pointer", fontFamily: "Poppins, sans-serif" }}>
+                    <button onClick={handleLogout} className={s.signOutBtn}>
                         Sign Out
                     </button>
                 </div>
             </nav>
 
-            <div style={{ maxWidth: 480, margin: "0 auto", padding: "32px 20px" }}>
+            <div className={s.content}>
 
                 {/* ── Header ── */}
-                <div style={{ textAlign: "center", marginBottom: 28 }}>
-                    <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#3B1F00", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
-                        <span style={{ color: "#FFF", fontWeight: 800, fontSize: 24 }}>
+                <div className={s.profileHeader}>
+                    <div className={s.avatarLarge}>
+                        <span className={s.avatarLargeText}>
                             {customer.first_name?.charAt(0).toUpperCase()}
                         </span>
                     </div>
-                    <h1 style={{ fontSize: 20, fontWeight: 800, color: "#0A0A0A", letterSpacing: "-0.02em" }}>{customer.name}</h1>
-                    <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: status.bg, border: `1px solid ${status.color}30`, borderRadius: 99, padding: "4px 12px", marginTop: 8 }}>
-                        <div style={{ width: 6, height: 6, borderRadius: "50%", background: status.color }} />
-                        <span style={{ fontSize: 11, fontWeight: 700, color: status.color }}>{status.label}</span>
+                    <h1 className={s.profileName}>{customer.name}</h1>
+                    <div className={s.statusBadge} style={{ background: status.bg, border: `1px solid ${status.color}30` }}>
+                        <div className={s.statusDot} style={{ background: status.color }} />
+                        <span className={s.statusLabel} style={{ color: status.color }}>{status.label}</span>
                     </div>
                 </div>
 
                 {/* ── Tabs ── */}
-                <div style={{ display: "flex", background: "#F0F0F0", borderRadius: 8, padding: 4, marginBottom: 24 }}>
+                <div className={s.tabs}>
                     {(["membership", "profile", "password"] as Tab[]).map((t) => (
                         <button key={t} onClick={() => setTab(t)}
-                            style={{
-                                flex: 1, padding: "8px 4px", borderRadius: 6, border: "none",
-                                fontSize: 11, fontWeight: 700, cursor: "pointer",
-                                fontFamily: "Poppins, sans-serif",
-                                background: tab === t ? "#FFF" : "transparent",
-                                color: tab === t ? "#0A0A0A" : "#888",
-                                boxShadow: tab === t ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
-                            }}>
+                            className={`${s.tabBtn} ${tab === t ? s.tabBtnActive : ""}`}>
                             {t.charAt(0).toUpperCase() + t.slice(1)}
                         </button>
                     ))}
@@ -194,71 +217,38 @@ export default function MePage() {
 
                 {/* ── Membership Tab ── */}
                 {tab === "membership" && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                    <div className={s.membershipTab}>
 
                         {/* Status cards */}
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                            <div style={{ background: "#FFF", border: "1px solid #E5E5E5", borderRadius: 12, padding: 16, textAlign: "center" }}>
-                                <div style={{ fontSize: 28, fontWeight: 900, color: "#3B1F00" }}>{customer.visit_count ?? 0}</div>
-                                <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#888", marginTop: 4 }}>Total Visits</div>
+                        <div className={s.statsGrid}>
+                            <div className={s.statCard}>
+                                <div className={s.statValue}>{customer.visit_count ?? 0}</div>
+                                <div className={s.statLabel}>Total Visits</div>
                             </div>
-                            <div style={{
-                                background: customer.payment_status === "submitted" ? "#FFF7ED"
-                                    : customer.payment_status === "rejected" ? "#FEF2F2"
-                                    : isExpired ? "#FEF2F2"
-                                    : !customer.is_active ? "#F5F5F5"
-                                    : customer.free_coffee ? "#F0FDF4" : "#F5F5F5",
-                                border: `1px solid ${
-                                    customer.payment_status === "submitted" ? "#FED7AA"
-                                    : customer.payment_status === "rejected" ? "#FECACA"
-                                    : isExpired ? "#FECACA"
-                                    : !customer.is_active ? "#E5E5E5"
-                                    : customer.free_coffee ? "#86EFAC" : "#E5E5E5"}`,
-                                borderRadius: 12, padding: 16, textAlign: "center"
-                            }}>
-                                <div style={{ fontSize: 28 }}>
-                                    {customer.payment_status === "submitted" ? "⏳"
-                                        : customer.payment_status === "rejected" ? "❌"
-                                        : isExpired ? "❌"
-                                        : !customer.is_active ? "—"
-                                        : customer.free_coffee ? "☕" : "—"}
-                                </div>
-                                <div style={{
-                                    fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 4,
-                                    color: customer.payment_status === "submitted" ? "#92400E"
-                                        : customer.payment_status === "rejected" ? "#DC2626"
-                                        : isExpired ? "#DC2626"
-                                        : !customer.is_active ? "#888"
-                                        : customer.free_coffee ? "#166534" : "#888"
-                                }}>
-                                    {customer.payment_status === "submitted" ? "Pending Approval"
-                                        : customer.payment_status === "rejected" ? "Registration Rejected"
-                                        : isExpired ? "Membership Expired"
-                                        : !customer.is_active ? "Account Inactive"
-                                        : customer.free_coffee ? "Free Coffee!" : "No Free Coffee"}
-                                </div>
+                            <div className={s.statCard} style={{ background: statusCardBg, border: `1px solid ${statusCardBorder}` }}>
+                                <div style={{ fontSize: 28 }}>{statusCardIcon}</div>
+                                <div className={s.statLabel} style={{ color: statusCardTextColor }}>{statusCardText}</div>
                             </div>
                         </div>
 
                         {/* Change password banner — staff-created accounts only */}
                         {customer.created_by_staff && !customer.password_changed && customer.payment_status === "approved" && (
-                            <div style={{ background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 12, padding: 16, textAlign: "center" }}>
-                                <p style={{ fontSize: 13, fontWeight: 700, color: "#1D4ED8" }}>🔐 One more step!</p>
-                                <p style={{ fontSize: 12, color: "#1E40AF", marginTop: 4, lineHeight: 1.6 }}>
+                            <div className={`${s.bannerBase} ${s.bannerBlue}`}>
+                                <p className={`${s.bannerTitle} ${s.bannerTitleBlue}`}>🔐 One more step!</p>
+                                <p className={`${s.bannerBody} ${s.bannerBodyBlue}`}>
                                     To activate your account, please go to the <strong>Password</strong> tab and change your password.
                                 </p>
-                                <button onClick={() => setTab("password")}
-                                    style={{ marginTop: 12, padding: "8px 20px", borderRadius: 6, background: "#1D4ED8", color: "#FFF", border: "none", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Poppins, sans-serif" }}>
+                                <button onClick={() => setTab("password")} className={s.bannerBtn}>
                                     Change Password →
                                 </button>
                             </div>
                         )}
 
                         {/* Card details */}
-                        <div style={{ background: "#FFF", border: "1px solid #E5E5E5", borderRadius: 12, padding: 20 }}>
-                            <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#888", marginBottom: 14 }}>Membership Card</p>
+                        <div className={s.card}>
+                            <p className={s.cardTitle}>Membership Card</p>
                             {customer.payment_status !== "approved" ? (
-                                <p style={{ fontSize: 12, color: "#888", textAlign: "center", padding: "10px 0" }}>
+                                <p className={s.cardEmpty}>
                                     Card details will be available once your membership is approved.
                                 </p>
                             ) : (
@@ -268,9 +258,9 @@ export default function MePage() {
                                         ["Valid Until", customer.expiry_date ? new Date(customer.expiry_date).toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" }) : "—"],
                                         ["Access Code", customer.access_code ?? "—"],
                                     ].map(([label, value]) => (
-                                        <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: 10, marginBottom: 10, borderBottom: "1px solid #F5F5F5" }}>
-                                            <span style={{ fontSize: 12, color: "#888", fontWeight: 600 }}>{label}</span>
-                                            <span style={{ fontSize: 13, color: "#0A0A0A", fontWeight: 700 }}>{value}</span>
+                                        <div key={label} className={s.cardRow}>
+                                            <span className={s.cardRowLabel}>{label}</span>
+                                            <span className={s.cardRowValue}>{value}</span>
                                         </div>
                                     ))}
                                 </>
@@ -279,28 +269,28 @@ export default function MePage() {
 
                         {/* QR Code */}
                         {customer.is_active && customer.qr_code && (
-                            <div style={{ background: "#FFF", border: "1px solid #E5E5E5", borderRadius: 12, padding: 24, textAlign: "center" }}>
-                                <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#888", marginBottom: 16 }}>Your Membership QR</p>
-                                <div style={{ display: "inline-block", padding: 16, background: "#FFF", borderRadius: 12, border: "1px solid #E5E5E5" }}>
+                            <div className={s.qrCard}>
+                                <p className={s.qrTitle}>Your Membership QR</p>
+                                <div className={s.qrWrapper}>
                                     <QRCode value={customer.qr_code} size={160} />
                                 </div>
-                                <p style={{ fontSize: 11, color: "#AAA", marginTop: 12 }}>Show this to staff when you visit</p>
+                                <p className={s.qrHint}>Show this to staff when you visit</p>
                             </div>
                         )}
 
                         {/* Pending banner */}
                         {customer.payment_status === "submitted" && (
-                            <div style={{ background: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: 12, padding: 16, textAlign: "center" }}>
-                                <p style={{ fontSize: 13, fontWeight: 700, color: "#92400E" }}>⏳ Payment Under Review</p>
-                                <p style={{ fontSize: 12, color: "#78350F", marginTop: 4, lineHeight: 1.6 }}>Your payment screenshot has been submitted. Staff will activate your membership shortly.</p>
+                            <div className={`${s.bannerBase} ${s.bannerOrange}`}>
+                                <p className={`${s.bannerTitle} ${s.bannerTitleOrange}`}>⏳ Payment Under Review</p>
+                                <p className={`${s.bannerBody} ${s.bannerBodyOrange}`}>Your payment screenshot has been submitted. Staff will activate your membership shortly.</p>
                             </div>
                         )}
 
                         {/* Rejected banner */}
                         {customer.payment_status === "rejected" && (
-                            <div style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 12, padding: 16, textAlign: "center" }}>
-                                <p style={{ fontSize: 13, fontWeight: 700, color: "#DC2626" }}>❌ Payment Rejected</p>
-                                <p style={{ fontSize: 12, color: "#B91C1C", marginTop: 4, lineHeight: 1.6 }}>Your payment was rejected. Please contact the shop for assistance.</p>
+                            <div className={`${s.bannerBase} ${s.bannerRed}`}>
+                                <p className={`${s.bannerTitle} ${s.bannerTitleRed}`}>❌ Payment Rejected</p>
+                                <p className={`${s.bannerBody} ${s.bannerBodyRed}`}>Your payment was rejected. Please contact the shop for assistance.</p>
                             </div>
                         )}
                     </div>
@@ -308,8 +298,8 @@ export default function MePage() {
 
                 {/* ── Profile Tab ── */}
                 {tab === "profile" && (
-                    <div style={{ background: "#FFF", border: "1px solid #E5E5E5", borderRadius: 12, padding: 20 }}>
-                        <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#888", marginBottom: 16 }}>Your Details</p>
+                    <div className={s.profileCard}>
+                        <p className={s.profileCardTitle}>Your Details</p>
                         {[
                             ["Full Name", customer.name],
                             ["Email", customer.email ?? "—"],
@@ -317,50 +307,40 @@ export default function MePage() {
                             ["Birthdate", customer.birthdate ? new Date(customer.birthdate).toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" }) : "—"],
                             ["Gender", customer.gender ?? "—"],
                         ].map(([label, value]) => (
-                            <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: 12, marginBottom: 12, borderBottom: "1px solid #F5F5F5" }}>
-                                <span style={{ fontSize: 12, color: "#888", fontWeight: 600 }}>{label}</span>
-                                <span style={{ fontSize: 13, color: "#0A0A0A", fontWeight: 700, textAlign: "right", maxWidth: "60%" }}>{value}</span>
+                            <div key={label} className={s.profileRow}>
+                                <span className={s.profileRowLabel}>{label}</span>
+                                <span className={s.profileRowValue}>{value}</span>
                             </div>
                         ))}
-                        <p style={{ fontSize: 11, color: "#AAA", marginTop: 8 }}>To update your details, please visit the shop or contact staff.</p>
+                        <p className={s.profileHint}>To update your details, please visit the shop or contact staff.</p>
                     </div>
                 )}
 
                 {/* ── Password Tab ── */}
                 {tab === "password" && (
-                    <div style={{ background: "#FFF", border: "1px solid #E5E5E5", borderRadius: 12, padding: 24 }}>
-                        <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#888", marginBottom: 20 }}>Change Password</p>
+                    <div className={s.passwordCard}>
+                        <p className={s.passwordCardTitle}>Change Password</p>
 
-                        {successMsg && (
-                            <div style={{ background: "#F0FDF4", border: "1px solid #86EFAC", borderRadius: 8, padding: "10px 14px", marginBottom: 16, fontSize: 12, color: "#166534" }}>
-                                {successMsg}
-                            </div>
-                        )}
-                        {errorMsg && (
-                            <div style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 8, padding: "10px 14px", marginBottom: 16, fontSize: 12, color: "#DC2626" }}>
-                                {errorMsg}
-                            </div>
-                        )}
+                        {successMsg && <div className={s.alertSuccess}>{successMsg}</div>}
+                        {errorMsg && <div className={s.alertError}>{errorMsg}</div>}
 
-                        <div style={{ marginBottom: 14 }}>
-                            <label style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#888", display: "block", marginBottom: 6 }}>New Password</label>
-                            <input type="password"
-                                style={{ width: "100%", padding: "10px 12px", borderRadius: 6, border: "1px solid #DDD", fontSize: 13, fontFamily: "Poppins, sans-serif", outline: "none" }}
+                        <div className={s.fieldGroup}>
+                            <label className={s.fieldLabel}>New Password</label>
+                            <input type="password" className={s.fieldInput}
                                 placeholder="Min. 6 characters"
                                 value={newPassword}
                                 onChange={(e) => setNewPassword(e.target.value)} />
                         </div>
-                        <div style={{ marginBottom: 20 }}>
-                            <label style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#888", display: "block", marginBottom: 6 }}>Confirm New Password</label>
-                            <input type="password"
-                                style={{ width: "100%", padding: "10px 12px", borderRadius: 6, border: "1px solid #DDD", fontSize: 13, fontFamily: "Poppins, sans-serif", outline: "none" }}
+                        <div className={s.fieldGroupLast}>
+                            <label className={s.fieldLabel}>Confirm New Password</label>
+                            <input type="password" className={s.fieldInput}
                                 placeholder="Re-enter new password"
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)} />
                         </div>
 
                         <button onClick={handleChangePassword} disabled={saving}
-                            style={{ width: "100%", padding: "13px", borderRadius: 8, background: saving ? "#888" : "#0A0A0A", color: "#FFF", border: "none", fontFamily: "Poppins, sans-serif", fontSize: 13, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer" }}>
+                            className={`${s.submitBtn} ${saving ? s.submitBtnDisabled : s.submitBtnActive}`}>
                             {saving ? "Updating…" : "Update Password"}
                         </button>
                     </div>

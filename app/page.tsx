@@ -123,15 +123,7 @@ export default function KaPoepleLanding() {
           backgroundSize: "24px 24px",
         }} />
         <div style={{ position: "relative", zIndex: 1, maxWidth: 680 }}>
-          <div style={{
-            display: "inline-flex", alignItems: "center", gap: 8,
-            background: "rgba(59,31,0,0.06)", border: "1px solid rgba(59,31,0,0.15)",
-            borderRadius: 99, padding: "6px 16px", marginBottom: 32,
-          }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: "#3B1F00", letterSpacing: "0.1em", textTransform: "uppercase" }}>
-              ☕ Now Accepting Members
-            </span>
-          </div>
+         
 
           <h1 style={{
             fontSize: "clamp(42px, 8vw, 80px)", fontWeight: 900,

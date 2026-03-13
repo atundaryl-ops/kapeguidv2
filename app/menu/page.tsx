@@ -53,12 +53,14 @@ export default function MenuPage() {
 
     useEffect(() => {
         async function checkAndLoad() {
-            const { data: { user: authUser } } = await supabase.auth.getUser();
-            if (!authUser) { router.push("/login"); return; }
+            const { data: { user: User } } = await supabase.auth.getUser();
+            if (!User) { router.push("/login"); return; }
 
             const { data: staffData } = await supabase
-                .from("staff").select("role").eq("id", authUser.id).maybeSingle();
-            if (!staffData) { router.push("/login"); return; }
+                .from("staff").select("role").eq("id", User.id).maybeSingle();
+                
+            if (!staffData) 
+                { router.push("/login"); return; }
 
             fetchMenu();
         }
