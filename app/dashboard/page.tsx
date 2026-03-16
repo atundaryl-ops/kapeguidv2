@@ -67,7 +67,7 @@ export default function Dashboard() {
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: "var(--warm-light)" }}>Overview</p>
             <h1 style={{ fontSize: 28, fontWeight: 800, color: "var(--text)", letterSpacing: "-0.02em" }}>Dashboard</h1>
-            <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
+            <p className="text-xs mt-1" suppressHydrationWarning style={{ color: "var(--text-muted)" }}>
               {format(new Date(), "EEEE, MMMM d · h:mm a")}
             </p>
           </div>

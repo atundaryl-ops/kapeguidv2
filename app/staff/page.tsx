@@ -6,6 +6,9 @@ import Navbar from "@/components/Navbar";
 
 type StaffMember = {
     id: string;
+    first_name: string;
+    middle_name: string | null;
+    last_name: string;
     full_name: string;
     email: string;
     role: "owner" | "staff";
@@ -19,7 +22,9 @@ type StaffMember = {
 };
 
 const EMPTY_FORM = {
-    full_name: "",
+    first_name: "",
+    middle_name: "",
+    last_name: "",
     email: "",
     role: "staff" as "owner" | "staff",
     address: "",
@@ -30,6 +35,30 @@ const EMPTY_FORM = {
     civil_status: "",
     religion: "",
 };
+
+function formatPhone(raw: string) {
+    const digits = raw.replace(/\D/g, "");
+    let core = digits;
+    if (core.startsWith("0")) core = "63" + core.slice(1);
+    if (core.startsWith("63")) core = core.slice(2);
+    if (core.length > 10) core = core.slice(0, 10);
+    let formatted = "+63";
+    if (core.length > 0) formatted += " " + core.slice(0, 3);
+    if (core.length > 3) formatted += " " + core.slice(3, 6);
+    if (core.length > 6) formatted += " " + core.slice(6, 10);
+    return formatted;
+}
+
+function phoneToE164(display: string) {
+    const digits = display.replace(/\D/g, "");
+    if (digits.startsWith("63")) return "+" + digits;
+    if (digits.startsWith("0")) return "+63" + digits.slice(1);
+    return "+63" + digits;
+}
+
+function isValidPhone(display: string) {
+    return /^\+639\d{9}$/.test(phoneToE164(display));
+}
 
 export default function StaffPage() {
     const router = useRouter();
@@ -44,18 +73,16 @@ export default function StaffPage() {
     const [tempPassword, setTempPassword] = useState("");
     const [showTempPassword, setShowTempPassword] = useState(false);
     const [deleteConfirm, setDeleteConfirm] = useState<StaffMember | null>(null);
+    const [showConfirm, setShowConfirm] = useState(false);
 
     useEffect(() => {
         async function checkAndLoad() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) { router.push("/login"); return; }
-
             const { data: staffData } = await supabase
                 .from("staff").select("role").eq("id", user.id).maybeSingle();
-
             if (!staffData) { router.push("/login"); return; }
             if (staffData.role !== "owner") { router.push("/dashboard"); return; }
-
             setIsOwner(true);
             fetchStaff();
         }
@@ -64,8 +91,7 @@ export default function StaffPage() {
 
     async function fetchStaff() {
         setLoading(true);
-        const { data } = await supabase
-            .from("staff").select("*").order("full_name");
+        const { data } = await supabase.from("staff").select("*").order("last_name");
         setStaffList(data ?? []);
         setLoading(false);
     }
@@ -81,14 +107,16 @@ export default function StaffPage() {
     function openEdit(member: StaffMember) {
         setEditing(member);
         setForm({
-            full_name: member.full_name ?? "",
+            first_name: member.first_name ?? "",
+            middle_name: member.middle_name ?? "",
+            last_name: member.last_name ?? "",
             email: member.email ?? "",
             role: member.role ?? "staff",
             address: member.address ?? "",
             date_of_birth: member.date_of_birth ?? "",
             gender: member.gender ?? "",
             gender_other: member.gender_other ?? "",
-            phone: member.phone ?? "",
+            phone: member.phone ? formatPhone(member.phone) : "",
             civil_status: member.civil_status ?? "",
             religion: member.religion ?? "",
         });
@@ -102,38 +130,51 @@ export default function StaffPage() {
         return Array.from({ length: 10 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
     }
 
-    async function handleSave() {
+    function validate() {
+        if (!form.first_name.trim()) { setError("First name is required."); return false; }
+        if (!form.last_name.trim()) { setError("Last name is required."); return false; }
+        if (!form.email.trim()) { setError("Email is required."); return false; }
+        // if (!form.address.trim()) { setError("Address is required."); return false; }
+        if (!form.date_of_birth) { setError("Date of birth is required."); return false; }
+        if (!form.gender) { setError("Gender is required."); return false; }
+        if (form.gender === "Others" && !form.gender_other.trim()) { setError("Please specify gender."); return false; }
+        if (!form.phone.trim()) { setError("Phone number is required."); return false; }
+        if (!isValidPhone(form.phone)) { setError("Enter a valid PH phone number (e.g. +63 9XX XXX XXXX)."); return false; }
+        if (!form.civil_status) { setError("Civil status is required."); return false; }
+        if (!form.religion.trim()) { setError("Religion is required."); return false; }
+        return true;
+    }
+
+    function handleCreateClick() {
         setError("");
+        if (!validate()) return;
+        setShowConfirm(true);
+    }
 
-        // Validation
-        if (!form.full_name.trim()) { setError("Full name is required."); return; }
-        if (!form.email.trim()) { setError("Email is required."); return; }
-        if (!form.address.trim()) { setError("Address is required."); return; }
-        if (!form.date_of_birth) { setError("Date of birth is required."); return; }
-        if (!form.gender) { setError("Gender is required."); return; }
-        if (form.gender === "Others" && !form.gender_other.trim()) { setError("Please specify gender."); return; }
-        if (!form.phone.trim()) { setError("Phone number is required."); return; }
-        if (!/^(09|\+639)\d{9}$/.test(form.phone.replace(/\s/g, ""))) { setError("Enter a valid PH phone number (e.g. 09171234567)."); return; }
-        if (!form.civil_status) { setError("Civil status is required."); return; }
-        if (!form.religion.trim()) { setError("Religion is required."); return; }
-
+    async function handleSave() {
+        setShowConfirm(false);
         setSaving(true);
 
+        const fullName = [form.first_name.trim(), form.middle_name.trim(), form.last_name.trim()]
+            .filter(Boolean).join(" ");
+
         const payload = {
-            full_name: form.full_name.trim(),
+            first_name: form.first_name.trim(),
+            middle_name: form.middle_name.trim() || null,
+            last_name: form.last_name.trim(),
+            full_name: fullName,
             email: form.email.trim(),
             role: form.role,
             address: form.address.trim(),
             date_of_birth: form.date_of_birth,
             gender: form.gender,
             gender_other: form.gender === "Others" ? form.gender_other.trim() : null,
-            phone: form.phone.trim(),
+            phone: phoneToE164(form.phone),
             civil_status: form.civil_status,
             religion: form.religion.trim(),
         };
 
         if (editing) {
-            // Update existing staff info only
             const { error: updateError } = await supabase
                 .from("staff").update(payload).eq("id", editing.id);
             if (updateError) { setError("Failed to update staff. " + updateError.message); setSaving(false); return; }
@@ -141,17 +182,14 @@ export default function StaffPage() {
             setSaving(false);
             setShowModal(false);
         } else {
-            // Create new staff — call API route to create auth account
             const password = generatePassword();
             const res = await fetch("/api/create-staff-auth", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ ...payload, password }),
             });
-
             const result = await res.json();
-            if (!res.ok) { setError(result.error ?? "Failed to create staff account."); setSaving(false); return; }
-
+            if (!res.ok) { setError(result.error ?? "Failed to create staff account."); setSaving(false); setShowModal(true); return; }
             await fetchStaff();
             setSaving(false);
             setShowModal(false);
@@ -173,6 +211,8 @@ export default function StaffPage() {
     }
 
     if (!isOwner && !loading) return null;
+
+    const fullNamePreview = [form.first_name, form.middle_name, form.last_name].filter(Boolean).join(" ");
 
     return (
         <div className="min-h-screen" style={{ background: "var(--bg)", fontFamily: "Poppins, sans-serif" }}>
@@ -204,18 +244,14 @@ export default function StaffPage() {
                         {staffList.map((member) => (
                             <div key={member.id} className="surface rounded"
                                 style={{ display: "flex", alignItems: "center", gap: 16, padding: "16px 20px" }}>
-
-                                {/* Avatar */}
                                 <div style={{
                                     width: 40, height: 40, borderRadius: "50%", background: "var(--warm)",
                                     display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
                                 }}>
                                     <span style={{ color: "#FFF", fontWeight: 800, fontSize: 16 }}>
-                                        {member.full_name?.charAt(0).toUpperCase()}
+                                        {member.first_name?.charAt(0).toUpperCase()}
                                     </span>
                                 </div>
-
-                                {/* Info */}
                                 <div style={{ flex: 1, minWidth: 0 }}>
                                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                                         <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text)" }}>{member.full_name}</span>
@@ -227,10 +263,8 @@ export default function StaffPage() {
                                         }}>{member.role === "owner" ? "👑 Owner" : "Staff"}</span>
                                     </div>
                                     <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{member.email}</div>
-                                    {member.phone && <div style={{ fontSize: 11, color: "var(--text-faint)", marginTop: 1 }}>{member.phone}</div>}
+                                    {member.phone && <div style={{ fontSize: 11, color: "var(--text-faint)", marginTop: 1 }}>{formatPhone(member.phone)}</div>}
                                 </div>
-
-                                {/* Actions */}
                                 <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
                                     <button onClick={() => openEdit(member)}
                                         style={{ fontSize: 10, fontWeight: 700, padding: "5px 12px", borderRadius: 6, cursor: "pointer", fontFamily: "Poppins, sans-serif", border: "1px solid var(--border)", background: "transparent", color: "var(--text-muted)" }}>
@@ -251,7 +285,7 @@ export default function StaffPage() {
             {showModal && (
                 <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
                     onClick={(e) => { if (e.target === e.currentTarget) setShowModal(false); }}>
-                    <div style={{ background: "var(--surface)", borderRadius: 16, padding: 28, width: "100%", maxWidth: 520, maxHeight: "90vh", overflowY: "auto", fontFamily: "Poppins, sans-serif" }}>
+                    <div style={{ background: "var(--surface)", borderRadius: 16, padding: 28, width: "100%", maxWidth: 540, maxHeight: "90vh", overflowY: "auto", fontFamily: "Poppins, sans-serif" }}>
                         <h2 style={{ fontSize: 16, fontWeight: 800, color: "var(--text)", marginBottom: 20 }}>
                             {editing ? "Edit Staff" : "Add Staff"}
                         </h2>
@@ -264,19 +298,32 @@ export default function StaffPage() {
 
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
 
-                            {/* Full Name */}
+                            {/* First Name */}
+                            <div>
+                                <label style={labelStyle}>First Name *</label>
+                                <input value={form.first_name} onChange={e => setForm({ ...form, first_name: e.target.value })}
+                                    placeholder="e.g. Juan" style={inputStyle} />
+                            </div>
+
+                            {/* Middle Name */}
+                            <div>
+                                <label style={labelStyle}>Middle Name <span style={{ fontWeight: 400, textTransform: "none" }}>(optional)</span></label>
+                                <input value={form.middle_name} onChange={e => setForm({ ...form, middle_name: e.target.value })}
+                                    placeholder="e.g. Santos" style={inputStyle} />
+                            </div>
+
+                            {/* Last Name */}
                             <div style={{ gridColumn: "1 / -1" }}>
-                                <label style={labelStyle}>Full Name *</label>
-                                <input value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })}
-                                    placeholder="e.g. Juan dela Cruz" style={inputStyle} />
+                                <label style={labelStyle}>Last Name *</label>
+                                <input value={form.last_name} onChange={e => setForm({ ...form, last_name: e.target.value })}
+                                    placeholder="e.g. dela Cruz" style={inputStyle} />
                             </div>
 
                             {/* Email */}
                             <div style={{ gridColumn: "1 / -1" }}>
                                 <label style={labelStyle}>Email *</label>
                                 <input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}
-                                    placeholder="e.g. juan@email.com" style={inputStyle}
-                                    disabled={!!editing} />
+                                    placeholder="e.g. juan@email.com" style={inputStyle} disabled={!!editing} />
                                 {editing && <p style={{ fontSize: 10, color: "var(--text-faint)", marginTop: 4 }}>Email cannot be changed after creation.</p>}
                             </div>
 
@@ -289,11 +336,21 @@ export default function StaffPage() {
                                 </select>
                             </div>
 
-                            {/* Phone */}
+                            {/* Phone with PH flag */}
                             <div>
                                 <label style={labelStyle}>Phone # *</label>
-                                <input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })}
-                                    placeholder="09171234567" style={inputStyle} />
+                                <div style={{ display: "flex", alignItems: "center", border: "1px solid var(--border)", borderRadius: 6, overflow: "hidden", background: "var(--surface)" }}>
+                                    <div style={{ padding: "10px 10px", background: "var(--surface2)", borderRight: "1px solid var(--border)", display: "flex", alignItems: "center", flexShrink: 0 }}>
+                                        <span style={{ fontSize: 16 }}>🇵🇭</span>
+                                        {/* <span style={{ fontSize: 13, fontWeight: 600, color: "#444", fontFamily: "Poppins, sans-serif" }}>+63</span> */}
+                                    </div>
+                                    <input
+                                        value={form.phone}
+                                        onChange={e => setForm({ ...form, phone: formatPhone(e.target.value) })}
+                                        placeholder="9XX XXX XXXX" maxLength={16}
+                                        style={{ ...inputStyle, border: "none", borderRadius: 0, flex: 1 }}
+                                    />
+                                </div>
                             </div>
 
                             {/* Date of Birth */}
@@ -314,7 +371,6 @@ export default function StaffPage() {
                                 </select>
                             </div>
 
-                            {/* Gender Other */}
                             {form.gender === "Others" && (
                                 <div style={{ gridColumn: "1 / -1" }}>
                                     <label style={labelStyle}>Please specify *</label>
@@ -343,22 +399,61 @@ export default function StaffPage() {
                             </div>
 
                             {/* Address */}
-                            <div style={{ gridColumn: "1 / -1" }}>
+                            {/* <div style={{ gridColumn: "1 / -1" }}>
                                 <label style={labelStyle}>Address *</label>
                                 <input value={form.address} onChange={e => setForm({ ...form, address: e.target.value })}
                                     placeholder="e.g. 123 Rizal St, Iloilo City" style={inputStyle} />
-                            </div>
+                            </div> */}
                         </div>
 
-                        {/* Buttons */}
                         <div style={{ display: "flex", gap: 10, marginTop: 24 }}>
                             <button onClick={() => setShowModal(false)}
                                 style={{ flex: 1, padding: "11px", borderRadius: 8, border: "1px solid var(--border)", background: "transparent", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "Poppins, sans-serif", color: "var(--text-muted)" }}>
                                 Cancel
                             </button>
-                            <button onClick={handleSave} disabled={saving}
+                            <button onClick={editing ? handleSave : handleCreateClick} disabled={saving}
                                 style={{ flex: 2, padding: "11px", borderRadius: 8, border: "none", background: saving ? "#888" : "#3B1F00", color: "#FFF", fontSize: 13, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", fontFamily: "Poppins, sans-serif" }}>
                                 {saving ? "Saving…" : editing ? "Save Changes" : "Create Account"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Confirm Create Modal ── */}
+            {showConfirm && (
+                <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 110, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+                    <div style={{ background: "var(--surface)", borderRadius: 16, padding: 28, width: "100%", maxWidth: 400, fontFamily: "Poppins, sans-serif" }}>
+                        <div style={{ fontSize: 32, marginBottom: 12, textAlign: "center" }}>👤</div>
+                        <h2 style={{ fontSize: 16, fontWeight: 800, color: "var(--text)", marginBottom: 8, textAlign: "center" }}>Create Staff Account?</h2>
+                        <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 20, lineHeight: 1.6, textAlign: "center" }}>
+                            You're about to create an account for:
+                        </p>
+                        <div style={{ background: "var(--surface2)", borderRadius: 10, padding: "14px 18px", marginBottom: 20 }}>
+                            <div style={{ fontSize: 14, fontWeight: 800, color: "var(--text)", marginBottom: 4 }}>{fullNamePreview}</div>
+                            <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{form.email}</div>
+                            <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{form.phone}</div>
+                            <div style={{
+                                fontSize: 11, marginTop: 8, display: "inline-block", padding: "2px 10px", borderRadius: 99,
+                                background: form.role === "owner" ? "rgba(59,31,0,0.12)" : "var(--surface)",
+                                border: "1px solid var(--border)",
+                                color: form.role === "owner" ? "var(--warm-light)" : "var(--text-muted)",
+                                fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em",
+                            }}>
+                                {form.role === "owner" ? "👑 Owner" : "Staff"}
+                            </div>
+                        </div>
+                        <p style={{ fontSize: 11, color: "var(--text-faint)", marginBottom: 20, textAlign: "center" }}>
+                            A temporary password will be generated for this account.
+                        </p>
+                        <div style={{ display: "flex", gap: 10 }}>
+                            <button onClick={() => setShowConfirm(false)}
+                                style={{ flex: 1, padding: "11px", borderRadius: 8, border: "1px solid var(--border)", background: "transparent", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "Poppins, sans-serif", color: "var(--text-muted)" }}>
+                                Go Back
+                            </button>
+                            <button onClick={handleSave} disabled={saving}
+                                style={{ flex: 2, padding: "11px", borderRadius: 8, border: "none", background: "#3B1F00", color: "#FFF", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "Poppins, sans-serif" }}>
+                                {saving ? "Creating…" : "Yes, Create Account"}
                             </button>
                         </div>
                     </div>
@@ -382,7 +477,7 @@ export default function StaffPage() {
                         }}>
                             {tempPassword}
                         </div>
-                        <button onClick={() => { navigator.clipboard.writeText(tempPassword); }}
+                        <button onClick={() => navigator.clipboard.writeText(tempPassword)}
                             style={{ width: "100%", padding: "10px", borderRadius: 8, border: "1px solid var(--border)", background: "transparent", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Poppins, sans-serif", color: "var(--text-muted)", marginBottom: 10 }}>
                             Copy Password
                         </button>

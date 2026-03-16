@@ -60,9 +60,9 @@ export default function Navbar() {
     const ch = supabase.channel("navbar-pending")
       .on("postgres_changes", { event: "*", schema: "public", table: "customers" }, fetchPending)
       .subscribe();
-    
 
-    
+
+
     return () => { supabase.removeChannel(ch); };
   }, []);
 
@@ -114,15 +114,15 @@ export default function Navbar() {
       badge: pendingCount,
     },
     {
-    href: "/staff",
-    label: "Staff",
-    icon: (<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-            <circle cx="9" cy="7" r="4" />
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-        </svg>
-    ), badge: 0,
-    ownerOnly: true,
+      href: "/staff",
+      label: "Staff",
+      icon: (<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+      </svg>
+      ), badge: 0,
+      ownerOnly: true,
     },
 
   ];
@@ -195,6 +195,13 @@ export default function Navbar() {
                       {staffInfo.role === "owner" ? "👑 Owner" : "🏪 Staff"}
                     </p>
                     <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10 }}>
+                      <Link href="/settings" style={{
+                        fontSize: 11, fontWeight: 600, textTransform: "uppercase",
+                        letterSpacing: "0.06em", color: "var(--text-muted)",
+                        textDecoration: "none", display: "block", marginBottom: 10
+                      }}>
+                        ⚙ Settings
+                      </Link>
                       <button onClick={handleLogout}
                         style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "#DC2626", background: "transparent", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", padding: 0 }}>
                         ↩ Sign Out
