@@ -58,9 +58,8 @@ export default function MenuPage() {
 
             const { data: staffData } = await supabase
                 .from("staff").select("role").eq("id", User.id).maybeSingle();
-                
-            if (!staffData) 
-                { router.push("/login"); return; }
+
+            if (!staffData) { router.push("/login"); return; }
 
             fetchMenu();
         }
@@ -213,7 +212,16 @@ export default function MenuPage() {
                     </div>
                 ) : displayed.length === 0 ? (
                     <div style={{ textAlign: "center", padding: "60px 0", color: "var(--text-muted)", fontSize: 13 }}>
-                        No items yet. Click <strong>+ Add Item</strong> to get started.
+                        No items yet.{" "}
+                        <button onClick={openAdd} style={{
+                            background: "none", border: "none", padding: 0,
+                            fontSize: 13, fontWeight: 700, color: "var(--warm-light)",
+                            cursor: "pointer", fontFamily: "Poppins, sans-serif",
+                            textDecoration: "underline", textUnderlineOffset: 3,
+                        }}>
+                            + Add Item
+                        </button>{" "}
+                        to get started.
                     </div>
                 ) : (
                     <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>

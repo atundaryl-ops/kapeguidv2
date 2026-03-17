@@ -200,7 +200,7 @@ export default function StaffPage() {
 
     async function handleDelete(member: StaffMember) {
         setSaving(true);
-        await fetch("/api/delete-staff", {
+        await fetch("/api/delete-staff-auth", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ staffId: member.id }),
