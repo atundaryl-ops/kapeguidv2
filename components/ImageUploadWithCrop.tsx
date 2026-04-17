@@ -310,7 +310,7 @@ export default function ImageUploadWithCrop({ currentImageUrl, onUploadComplete 
                         {/* Crop area */}
                         <div
                             ref={containerRef}
-                            style={{ position: "relative", width: "100%", maxHeight: 420, overflow: "hidden", background: "#000", cursor: dragging ? "grabbing" : resizing ? "nwse-resize" : "default" }}
+                            style={{ position: "relative", width: "100%", background: "#000", cursor: dragging ? "grabbing" : resizing ? "nwse-resize" : "default" }}
                             onPointerDown={onPointerDown}
                             onPointerMove={onPointerMove}
                             onPointerUp={onPointerUp}
@@ -319,7 +319,7 @@ export default function ImageUploadWithCrop({ currentImageUrl, onUploadComplete 
                                 src={previewSrc}
                                 alt="Preview"
                                 draggable={false}
-                                style={{ width: "100%", height: "100%", objectFit: "contain", display: "block", userSelect: "none" }}
+                                style={{ width: "100%", objectFit: "contain", display: "block", userSelect: "none" }}
                             />
                             <canvas
                                 ref={canvasRef}
