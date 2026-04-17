@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser as supabase } from "@/lib/supabase";
 import Navbar from "@/components/Navbar";
+import ImageUploadWithCrop from "@/components/ImageUploadWithCrop";
 
 type MenuItem = {
     id: string;
@@ -133,31 +134,7 @@ export default function MenuPage() {
         await supabase.from("menu").update({ is_available: !item.is_available }).eq("id", item.id);
         setItems(prev => prev.map(i => i.id === item.id ? { ...i, is_available: !i.is_available } : i));
     }
-    async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        const fileExt = file.name.split(".").pop();
-        const fileName = `${Date.now()}.${fileExt}`;
-
-        const { error } = await supabase.storage
-            .from("menu-images")
-            .upload(fileName, file);
-
-        if (error) {
-            alert("Upload failed");
-            return;
-        }
-
-        const { data } = supabase.storage
-            .from("menu-images")
-            .getPublicUrl(fileName);
-
-        setForm((prev) => ({
-            ...prev,
-            image_url: data.publicUrl,
-        }));
-    }
+    
 
     const displayed = filterCategory === "All"
         ? items
@@ -356,25 +333,11 @@ export default function MenuPage() {
                                 Image <span style={{ fontWeight: 400, textTransform: "none" }}>(optional)</span>
                             </label>
 
-                            <input
-                                type="file"
-                                accept="image/*"
-                                onChange={handleImageUpload}
-                                style={inputStyle}
+                            <ImageUploadWithCrop
+                                currentImageUrl={form.image_url}
+                                onUploadComplete={(url) => setForm(prev => ({ ...prev, image_url: url }))}
                             />
                         </div>
-                        {form.image_url && (
-                            <img
-                                src={form.image_url}
-                                style={{
-                                    width: 80,
-                                    height: 80,
-                                    objectFit: "cover",
-                                    borderRadius: 8,
-                                    marginTop: 8
-                                }}
-                            />
-                        )}
 
                         {/* Is Available */}
                         <div style={{ marginBottom: 24, display: "flex", alignItems: "center", gap: 10 }}>
