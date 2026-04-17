@@ -95,10 +95,12 @@ export default function MenuSection() {
 
                                 {/* Image or placeholder */}
                                 {item.image_url ? (
-                                    <img src={item.image_url} alt={item.name}
-                                        style={{ width: "100%", height: 160, objectFit: "cover" }} />
+                                    <div style={{ width: "100%", aspectRatio: "1 / 1", background: "#F5F5F5", overflow: "hidden" }}>
+                                        <img src={item.image_url} alt={item.name}
+                                            style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                                    </div>
                                 ) : (
-                                    <div style={{ width: "100%", height: 120, background: "rgba(59,31,0,0.05)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36 }}>
+                                    <div style={{ width: "100%", aspectRatio: "1 / 1", background: "rgba(59,31,0,0.05)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36 }}>
                                         ☕
                                     </div>
                                 )}
@@ -110,8 +112,8 @@ export default function MenuSection() {
                                             position: "absolute", top: 12, right: 12,
                                             fontSize: 9, fontWeight: 700, letterSpacing: "0.1em",
                                             padding: "3px 8px", borderRadius: 99,
-                                            background: item.tag === "NEW" ? "#3B1F00" : "rgba(59,31,0,0.08)",
-                                            color: item.tag === "NEW" ? "#FFF" : "#3B1F00",
+                                            background: "#000",
+                                            color: "#FFF",
                                         }}>{item.tag}</span>
                                     )}
 
